@@ -1,0 +1,5 @@
+lxml
+cython
+conda
+requests
+hget @ git+https://github.com/yodeng/hget.git@master
