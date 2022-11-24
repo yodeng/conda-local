@@ -92,6 +92,20 @@ class LocalConda(Log):
         return channels
 
     def install(self, cmd="install"):
+        if cmd != "create":
+            if isdir(self.prefix):
+                if not is_conda_environment(self.prefix):
+                    raise EnvironmentLocationNotFound(self.prefix)
+                delete_trash(self.prefix)
+                if not isfile(join(self.prefix, 'conda-meta', 'history')):
+                    if paths_equal(self.prefix, context.conda_prefix):
+                        raise NoBaseEnvironmentError()
+                    else:
+                        if not path_is_clean(self.prefix):
+                            raise DirectoryNotACondaEnvironmentError(
+                                self.prefix)
+            else:
+                raise EnvironmentLocationNotFound(self.prefix)
         self._get_spec()
         self.solver = self._get_solve()
         update_modifier = UpdateModifier.FREEZE_INSTALLED
@@ -145,7 +159,7 @@ class LocalConda(Log):
                               dry_run=False)
         check_prefix(self.prefix, json=context.json)
         self.args.force_reinstall = True
-        self.install()
+        self.install("create")
         touch_nonadmin(self.prefix)
         print_activate(self.args.name or self.prefix)
 
@@ -158,7 +172,7 @@ class LocalConda(Log):
                     raise CondaError("Invalid spec for 'conda update': %s\n"
                                      "Use 'conda install' instead." % spec)
                 if not prefix_data.get(spec.name, None):
-                    raise PackageNotInstalledError(prefix, spec.name)
+                    raise PackageNotInstalledError(self.prefix, spec.name)
         self.install("update")
 
 
