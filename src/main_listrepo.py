@@ -44,7 +44,7 @@ def execute(args):
                 if chn in chn_info:
                     chn_info[chn]["cache time"] = chn_time
     for cn, info in sorted(chn_info.items(), key=lambda x: sum(list(x[1]['packages'].values())), reverse=True):
-        print(cstring(cn + ":", 0, 34))
+        print(cstring(cn + ":", 1, 34))
         for k in ['cache time', 'url', 'packages', 'size']:
             if k in ['cache time', "url"]:
                 v = "  - " + k + ": " + info[k]

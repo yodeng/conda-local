@@ -19,12 +19,10 @@ from collections import defaultdict
 from urllib.parse import urlsplit, urlunsplit
 from os.path import abspath, dirname, basename, exists, isdir, isfile, join
 
-
 from conda.cli import common
 from conda.cli.main import init_loggers
 from conda.cli.main_search import pretty_record
-from conda.cli.conda_argparse import add_parser_prefix
-from conda.cli.conda_argparse import ArgumentParser as CondaArgumentParser
+from conda.cli.conda_argparse import add_parser_prefix, ArgumentParser as CondaArgumentParser
 
 from conda.common.url import path_to_url
 from conda.common.constants import NULL
@@ -49,9 +47,6 @@ from conda.gateways.logging import initialize_logging
 from conda.gateways.disk.test import is_conda_environment
 from conda.gateways.disk.delete import rm_rf, delete_trash, path_is_clean
 
-from conda.misc import explicit
-from conda.misc import touch_nonadmin
-
 from conda.models.match_spec import MatchSpec
 from conda.models.version import VersionOrder
 from conda.models.channel import Channel, all_channel_urls
@@ -59,6 +54,7 @@ from conda.models.channel import Channel, all_channel_urls
 from conda.auxlib.ish import dals
 from conda.notices import notices
 from conda.utils import human_bytes
+from conda.misc import explicit, touch_nonadmin
 from conda.exceptions import (UnsatisfiableError,
                               DryRunExit,
                               CondaValueError,

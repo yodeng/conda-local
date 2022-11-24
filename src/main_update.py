@@ -59,7 +59,6 @@ def configure_parser(sub_parsers):
     p.set_defaults(func='.main_update.execute')
 
 
-@notices
 def execute(args):
     prefix = determine_target_prefix(context, args)
     lc = LocalConda(prefix, args)
