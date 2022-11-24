@@ -28,12 +28,10 @@ def create_parser():
 def do_call(args):
     relative_mod, func_name = args.func.rsplit('.', 1)
     module = import_module(relative_mod, __name__.rsplit('.', 1)[0])
-    exit_code = getattr(module, func_name)(args)
-    return exit_code
+    return getattr(module, func_name)(args)
 
 
 def main():
-    initialize_logging()
     parser = create_parser()
     args = parser.parse_args()
     os.environ["CONDA_AUTO_UPDATE_CONDA"] = "false"

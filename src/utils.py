@@ -19,7 +19,6 @@ from collections import defaultdict
 from urllib.parse import urlsplit, urlunsplit
 from os.path import abspath, dirname, basename, exists, isdir, isfile, join
 
-from conda.gateways.logging import initialize_logging
 
 from conda.cli import common
 from conda.cli.main import init_loggers
@@ -46,8 +45,9 @@ from conda.base.constants import UpdateModifier, ROOT_ENV_NAME
 from conda._vendor.toolz import concat
 from conda._vendor.boltons.setutils import IndexedSet
 
-from conda.gateways.disk.delete import rm_rf
+from conda.gateways.logging import initialize_logging
 from conda.gateways.disk.test import is_conda_environment
+from conda.gateways.disk.delete import rm_rf, delete_trash, path_is_clean
 
 from conda.misc import explicit
 from conda.misc import touch_nonadmin
@@ -63,11 +63,15 @@ from conda.exceptions import (UnsatisfiableError,
                               DryRunExit,
                               CondaValueError,
                               PackagesNotFoundError,
+                              NoBaseEnvironmentError,
                               PackageNotInstalledError,
+                              EnvironmentLocationNotFound,
+                              DirectoryNotACondaEnvironmentError,
                               conda_exception_handler)
 
 from ._version import __version__
 
+DEFAULT_THREADS = 10
 REPODATA_FN = "repodata.json"
 DEFAULT_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud"
 LOCAL_CONDA_LOG = hutils.loger()
