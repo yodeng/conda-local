@@ -140,6 +140,11 @@ class Log(object):
         return getLogger()
 
 
+def cstring(string, mode=0, fore=37, back=40):
+    s = '\x1b[%s;%s;%sm%s\x1b[0m'
+    return s % (mode, fore, back, string)
+
+
 def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):
     repo_urls = nested_dict()
     res = requests.get(url=mirrors)

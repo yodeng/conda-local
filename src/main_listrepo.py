@@ -28,7 +28,7 @@ def execute(args):
     for repofile in localrepo.repos:
         chn = basename(dirname(dirname(repofile)))
         url = localrepo.channels_url[chn]
-        chn_info[chn]["url"] = url
+        chn_info[chn]["url"] = cstring(url, 4, 34)
         with open(repofile) as fi:
             repodata = json.load(fi)
         subdir = repodata['info'].get('subdir', basename(dirname(repofile)))
@@ -44,7 +44,7 @@ def execute(args):
                 if chn in chn_info:
                     chn_info[chn]["cache time"] = chn_time
     for cn, info in sorted(chn_info.items(), key=lambda x: sum(list(x[1]['packages'].values())), reverse=True):
-        print(cn + ":")
+        print(cstring(cn + ":", 0, 34))
         for k in ['cache time', 'url', 'packages', 'size']:
             if k in ['cache time', "url"]:
                 v = "  - " + k + ": " + info[k]
