@@ -6,8 +6,6 @@ import json
 import hashlib
 import requests
 
-import hget.utils as hutils
-
 from hget import hget
 from lxml import etree
 from textwrap import dedent
@@ -70,7 +68,7 @@ from ._version import __version__
 DEFAULT_THREADS = 10
 REPODATA_FN = "repodata.json"
 DEFAULT_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud"
-LOCAL_CONDA_LOG = hutils.loger()
+LOCAL_CONDA_LOG = getLogger('conda.stdout')
 
 
 def flatten(x):
@@ -133,7 +131,7 @@ class Log(object):
 
     @property
     def log(self):
-        return getLogger()
+        return getLogger('conda.stdout')
 
 
 def cstring(string, mode=0, fore=37, back=40):
