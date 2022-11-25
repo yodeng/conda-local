@@ -2,6 +2,7 @@
 # coding:utf-8
 
 from .utils import *
+from .download_and_extract import *
 
 
 class LocalCondaRepo(Log):
@@ -56,6 +57,7 @@ class LocalConda(Log):
         self.local_repo = LocalCondaRepo()
         self.solver = None
         self.specs = []
+        self.lock = Lock()
 
     def _get_spec(self):
         args_packages = [s.strip('"\'') for s in self.args.packages]
@@ -75,8 +77,8 @@ class LocalConda(Log):
         channels = self.file_channels(context.channels, self.local_repo)
         self.log.info("Using local conda channel: %s", cstring(", ".join(
             flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channels])), 0, 34))
-        solver = _localSolver(self.prefix, channels,
-                              context.subdirs, specs_to_add=self.specs)
+        solver = localSolver(self.prefix, channels,
+                             context.subdirs, specs_to_add=self.specs)
         return solver
 
     @staticmethod
@@ -128,8 +130,21 @@ class LocalConda(Log):
         common.confirm_yn()
         for axn in unlink_link_transaction._pfe.cache_actions:
             self.back_url(axn)
-        unlink_link_transaction.download_and_extract()
+        self.download_extract(unlink_link_transaction)
         unlink_link_transaction.execute()
+
+    def download_extract(self, unlink_link_transaction):
+        if len(unlink_link_transaction._pfe.cache_actions):
+            print("\nDownload Packages")
+            with ThreadPoolExecutor(max_workers=DEFAULT_DOWNLOAD_THREADS) as p:
+                for axn, exn in zip(unlink_link_transaction._pfe.cache_actions, unlink_link_transaction._pfe.extract_actions):
+                    download = Download(axn, exn, self.lock)
+                    p.submit(download.run)
+            with Spinner("\nExtract Packages", fail_message="failed\n"):
+                for exn in unlink_link_transaction._pfe.extract_actions:
+                    estract = Extract(exn)
+                    estract.run()
+        unlink_link_transaction._pfe._executed = True
 
     def back_url(self, axn):
         c = Channel.from_url(axn.url)
@@ -182,9 +197,9 @@ class localArgumentParser(CondaArgumentParser, ArgumentParser):
         ArgumentParser.print_help(self)
 
 
-class _localSolver(Solver):
+class localSolver(Solver):
     def __init__(self, *args, **kwargs):
-        super(_localSolver, self).__init__(*args, **kwargs)
+        super(localSolver, self).__init__(*args, **kwargs)
 
     def solve_for_transaction(self, update_modifier=NULL, deps_modifier=NULL, prune=NULL,
                               ignore_pinned=NULL, force_remove=NULL, force_reinstall=NULL,
@@ -198,187 +213,7 @@ class _localSolver(Solver):
                                                            should_retry_solve)
             stp = PrefixSetup(self.prefix, unlink_precs, link_precs,
                               self.specs_to_remove, self.specs_to_add, self.neutered_specs)
-            return _localUnlinkLinkTransaction(stp)
-
-
-class _localUnlinkLinkTransaction(UnlinkLinkTransaction):
-    def __init__(self, *args, **kwargs):
-        super(_localUnlinkLinkTransaction, self).__init__(*args, **kwargs)
-
-    def _get_pfe(self):
-        if self._pfe is not None:
-            pfe = self._pfe
-        elif not self.prefix_setups:
-            self._pfe = pfe = _localProgressiveFetchExtract(())
-        else:
-            link_precs = set(
-                concat(stp.link_precs for stp in self.prefix_setups.values()))
-            self._pfe = pfe = _localProgressiveFetchExtract(link_precs)
-        return pfe
-
-
-class _localProgressiveFetchExtract(ProgressiveFetchExtract):
-    def __init__(self, *args, **kwargs):
-        super(_localProgressiveFetchExtract, self).__init__(*args, **kwargs)
-
-    @staticmethod
-    def _execute_actions(prec_or_spec, actions):
-        cache_axn, extract_axn = actions
-        if cache_axn is None and extract_axn is None:
-            return
-        desc = ''
-        if prec_or_spec.name and prec_or_spec.version:
-            desc = "%s-%s" % (prec_or_spec.name or '',
-                              prec_or_spec.version or '')
-        size = getattr(prec_or_spec, 'size', None)
-        size_str = size and human_bytes(size) or ''
-        if len(desc) > 0:
-            desc = "%-20.20s | " % desc
-        if len(size_str) > 0:
-            desc += "%-9s | " % size_str
-        progress_bar = ProgressBar(
-            desc, not context.verbosity and not context.quiet, context.json)
-        download_total = 1.0
-        try:
-            if cache_axn:
-                cache_axn.verify()
-                download_total = 0
-                progress_update_cache_axn = None
-                cache_axn.execute(progress_update_cache_axn)
-            if extract_axn:
-                extract_axn.verify()
-
-                def progress_update_extract_axn(pct_completed):
-                    progress_bar.update_to(
-                        (1 - download_total) * pct_completed + download_total)
-                extract_axn.execute(progress_update_extract_axn)
-                progress_bar.update_to(1.0)
-        except Exception as e:
-            if extract_axn:
-                extract_axn.reverse()
-            if cache_axn:
-                cache_axn.reverse()
-            return e
-        else:
-            if cache_axn:
-                cache_axn.cleanup()
-            if extract_axn:
-                extract_axn.cleanup()
-            progress_bar.finish()
-        finally:
-            progress_bar.close()
-
-    @staticmethod
-    def make_actions_for_record(pref_or_spec):
-        assert pref_or_spec is not None
-        sha256 = pref_or_spec.get("sha256")
-        size = pref_or_spec.get("size")
-        md5 = pref_or_spec.get("md5")
-        legacy_bz2_size = pref_or_spec.get("legacy_bz2_size")
-        legacy_bz2_md5 = pref_or_spec.get("legacy_bz2_md5")
-
-        def pcrec_matches(pcrec):
-            matches = True
-            if size is not None and pcrec.get('size') is not None:
-                matches = pcrec.size in (size, legacy_bz2_size)
-            if matches and md5 is not None and pcrec.get('md5') is not None:
-                matches = pcrec.md5 in (md5, legacy_bz2_md5)
-            return matches
-        extracted_pcrec = next((
-            pcrec for pcrec in concat(PackageCacheData(pkgs_dir).query(pref_or_spec)
-                                      for pkgs_dir in context.pkgs_dirs)
-            if pcrec.is_extracted
-        ), None)
-        if extracted_pcrec and pcrec_matches(extracted_pcrec) and extracted_pcrec.get('url'):
-            return None, None
-        pcrec_from_writable_cache = next(
-            (pcrec for pcrec in concat(
-                pcache.query(pref_or_spec) for pcache in PackageCacheData.writable_caches()
-            ) if pcrec.is_fetched),
-            None
-        )
-        if (pcrec_from_writable_cache and pcrec_matches(pcrec_from_writable_cache) and
-                pcrec_from_writable_cache.get('url')):
-            extract_axn = ExtractPackageAction(
-                source_full_path=pcrec_from_writable_cache.package_tarball_full_path,
-                target_pkgs_dir=dirname(
-                    pcrec_from_writable_cache.package_tarball_full_path),
-                target_extracted_dirname=basename(
-                    pcrec_from_writable_cache.extracted_package_dir),
-                record_or_spec=pcrec_from_writable_cache,
-                sha256=pcrec_from_writable_cache.sha256 or sha256,
-                size=pcrec_from_writable_cache.size or size,
-                md5=pcrec_from_writable_cache.md5 or md5,
-            )
-            return None, extract_axn
-        pcrec_from_read_only_cache = next((
-            pcrec for pcrec in concat(pcache.query(pref_or_spec)
-                                      for pcache in PackageCacheData.read_only_caches())
-            if pcrec.is_fetched
-        ), None)
-        first_writable_cache = PackageCacheData.first_writable()
-        if pcrec_from_read_only_cache and pcrec_matches(pcrec_from_read_only_cache):
-            cache_axn = _localCacheUrlAction(
-                url=path_to_url(
-                    pcrec_from_read_only_cache.package_tarball_full_path),
-                target_pkgs_dir=first_writable_cache.pkgs_dir,
-                target_package_basename=pcrec_from_read_only_cache.fn,
-                sha256=pcrec_from_read_only_cache.get("sha256") or sha256,
-                size=pcrec_from_read_only_cache.get("size") or size,
-                md5=pcrec_from_read_only_cache.get("md5") or md5,
-            )
-            trgt_extracted_dirname = strip_pkg_extension(
-                pcrec_from_read_only_cache.fn)[0]
-            extract_axn = ExtractPackageAction(
-                source_full_path=cache_axn.target_full_path,
-                target_pkgs_dir=first_writable_cache.pkgs_dir,
-                target_extracted_dirname=trgt_extracted_dirname,
-                record_or_spec=pcrec_from_read_only_cache,
-                sha256=pcrec_from_read_only_cache.get("sha256") or sha256,
-                size=pcrec_from_read_only_cache.get("size") or size,
-                md5=pcrec_from_read_only_cache.get("md5") or md5,
-            )
-            return cache_axn, extract_axn
-        url = pref_or_spec.get('url')
-        assert url
-        cache_axn = _localCacheUrlAction(
-            url=url,
-            target_pkgs_dir=first_writable_cache.pkgs_dir,
-            target_package_basename=pref_or_spec.fn,
-            sha256=sha256,
-            size=size,
-            md5=md5,
-        )
-        extract_axn = ExtractPackageAction(
-            source_full_path=cache_axn.target_full_path,
-            target_pkgs_dir=first_writable_cache.pkgs_dir,
-            target_extracted_dirname=strip_pkg_extension(pref_or_spec.fn)[0],
-            record_or_spec=pref_or_spec,
-            sha256=sha256,
-            size=size,
-            md5=md5,
-        )
-        return cache_axn, extract_axn
-
-
-class _localCacheUrlAction(CacheUrlAction):
-    def __init__(self, *args, **kwargs):
-        super(_localCacheUrlAction, self).__init__(*args, **kwargs)
-
-    def _execute_channel(self, target_package_cache, progress_update_callback=None):
-        kwargs = {}
-        if self.size is not None:
-            kwargs["size"] = self.size
-        if self.sha256:
-            kwargs["sha256"] = self.sha256
-        elif self.md5:
-            kwargs["md5"] = self.md5
-        download(
-            self.url,
-            self.target_full_path,
-            **kwargs
-        )
-        target_package_cache._urls_data.add_url(self.url)
+            return UnlinkLinkTransaction(stp)
 
 
 def check_prefix(prefix, json=False):

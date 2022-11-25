@@ -8,8 +8,10 @@ import requests
 
 from hget import hget
 from lxml import etree
+from threading import Lock
 from textwrap import dedent
 from argparse import ArgumentParser, SUPPRESS
+from concurrent.futures import ThreadPoolExecutor
 
 from logging import getLogger
 from importlib import import_module
@@ -33,7 +35,7 @@ from conda.core.prefix_data import PrefixData
 from conda.core.index import calculate_channel_urls
 from conda.core.link import PrefixSetup, UnlinkLinkTransaction
 from conda.core.path_actions import CacheUrlAction, ExtractPackageAction
-from conda.core.package_cache_data import PackageCacheData, ProgressiveFetchExtract
+from conda.core.package_cache_data import PackageCacheData
 
 from conda.base.context import context, determine_target_prefix
 from conda.base.constants import UpdateModifier, ROOT_ENV_NAME
@@ -42,7 +44,9 @@ from conda._vendor.toolz import concat
 from conda._vendor.boltons.setutils import IndexedSet
 
 from conda.gateways.logging import initialize_logging
+from conda.gateways.disk.read import lexists
 from conda.gateways.disk.test import is_conda_environment
+from conda.gateways.disk.create import extract_tarball
 from conda.gateways.disk.delete import rm_rf, delete_trash, path_is_clean
 
 from conda.models.match_spec import MatchSpec
@@ -58,6 +62,7 @@ from conda.exceptions import (UnsatisfiableError,
                               CondaValueError,
                               PackagesNotFoundError,
                               NoBaseEnvironmentError,
+                              ChecksumMismatchError,
                               PackageNotInstalledError,
                               EnvironmentLocationNotFound,
                               DirectoryNotACondaEnvironmentError,
@@ -66,6 +71,7 @@ from conda.exceptions import (UnsatisfiableError,
 from ._version import __version__
 
 DEFAULT_THREADS = 10
+DEFAULT_DOWNLOAD_THREADS = 10
 REPODATA_FN = "repodata.json"
 DEFAULT_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud"
 LOCAL_CONDA_LOG = getLogger('conda.stdout')

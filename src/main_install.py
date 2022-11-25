@@ -30,7 +30,7 @@ def configure_parser(sub_parsers):
         help="Do not display progress bar.",
     )
     p.add_argument(
-        '--force-reinstall',
+        "-f", '--force-reinstall',
         help=('Force creation of environment (removing a previously-existing '
               'environment of the same name).'),
         action='store_true',
