@@ -11,7 +11,7 @@ from lxml import etree
 from threading import Lock
 from textwrap import dedent
 from argparse import ArgumentParser, SUPPRESS
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 
 from logging import getLogger
 from importlib import import_module
@@ -71,7 +71,6 @@ from conda.exceptions import (UnsatisfiableError,
 from ._version import __version__
 
 DEFAULT_THREADS = 10
-DEFAULT_DOWNLOAD_THREADS = 10
 REPODATA_FN = "repodata.json"
 DEFAULT_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud"
 LOCAL_CONDA_LOG = getLogger('conda.stdout')

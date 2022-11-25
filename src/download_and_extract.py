@@ -2,7 +2,7 @@ from .utils import *
 
 from conda.core.path_actions import *
 
-__all__ = ["Extract", "Download"]
+__all__ = ["Extract", "Download", "Decompress"]
 
 
 class Download(object):
@@ -97,9 +97,6 @@ class Extract(object):
 
     def extract(self):
         exn = self.exn
-        if lexists(exn.target_full_path):
-            rm_rf(exn.target_full_path)
-        extract_tarball(exn.source_full_path, exn.target_full_path)
         try:
             raw_index_json = read_index_json(exn.target_full_path)
         except (IOError, OSError, JSONDecodeError, FileNotFoundError):
@@ -142,3 +139,9 @@ class Extract(object):
             return e
         else:
             self.exn.cleanup()
+
+
+def Decompress(exn):
+    if lexists(exn.target_full_path):
+        rm_rf(exn.target_full_path)
+    extract_tarball(exn.source_full_path, exn.target_full_path)
