@@ -20,7 +20,7 @@ def configure_parser(sub_parsers):
         epilog=example,
     )
     p.add_argument(
-        "--all",
+        "-a", "--all",
         action="store_true",
         help="%s all packages, i.e., the entire environment." % name.capitalize(),
     )

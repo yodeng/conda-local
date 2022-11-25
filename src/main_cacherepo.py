@@ -28,16 +28,21 @@ def configure_parser(sub_parsers):
         metavar='url',
         nargs='+',
         default=[DEFAULT_MIRROR, ],
-        help="conda mirror site, %s by default" % DEFAULT_MIRROR,
+        help="conda mirror (Not channel) site, %s by default" % DEFAULT_MIRROR,
     )
     p.set_defaults(func='.main_cacherepo.execute')
 
 
 def execute(args):
+    from hget.utils import loger
+    log = loger()
     mirrors = args.mirror
     repo_info = {}
     for ms in mirrors:
         urls = get_repo_urls(mirrors=ms)
+        if not len(urls):
+            raise CondaError(
+                "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
         repo_info[ms] = urls
     for ms, info in repo_info.items():
         n = urlsplit(ms)

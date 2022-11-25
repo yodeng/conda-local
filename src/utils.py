@@ -59,6 +59,7 @@ from conda.utils import human_bytes
 from conda.misc import explicit, touch_nonadmin
 from conda.exceptions import (UnsatisfiableError,
                               DryRunExit,
+                              CondaError,
                               CondaValueError,
                               PackagesNotFoundError,
                               NoBaseEnvironmentError,
