@@ -6,6 +6,7 @@ from .src import *
 from . import main_create
 from . import main_update
 from . import main_search
+from . import main_remove
 from . import main_install
 from . import main_listrepo
 from . import main_cacherepo
@@ -17,6 +18,7 @@ def create_parser():
     main_install.configure_parser(sub_parsers)
     main_create.configure_parser(sub_parsers)
     main_update.configure_parser(sub_parsers)
+    main_remove.configure_parser(sub_parsers)
     main_search.configure_parser(sub_parsers)
     main_cacherepo.configure_parser(sub_parsers)
     main_listrepo.configure_parser(sub_parsers)
