@@ -58,7 +58,7 @@ def configure_parser(sub_parsers):
 def execute(args):
     if not (args.all or args.package_names):
         raise CondaValueError('no package names supplied,\n'
-                              '       try "conda remove -h" for more details')
+                              '       try "conda local remove -h" for more details')
     prefix = context.target_prefix
     check_non_admin()
     if args.all and prefix == context.default_prefix:

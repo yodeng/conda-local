@@ -41,11 +41,12 @@ def execute(args):
         repo_info[ms] = urls
     for ms, info in repo_info.items():
         n = urlsplit(ms)
-        md = join(local_repo_dir, n.hostname, n.path.strip("/"))
+        md = join(LocalCondaRepo.defaut_repo_dir,
+                  n.hostname, n.path.strip("/"))
         url_data = {"channels": {}}
-        if os.path.isfile(join(md, "urls.txt")):
+        if os.path.isfile(join(md, ".urls.json")):
             try:
-                with open(join(md, "urls.txt")) as fi:
+                with open(join(md, ".urls.json")) as fi:
                     url_data = json.load(fi)
             except:
                 pass
@@ -60,5 +61,5 @@ def execute(args):
                 if isfile(outfile+".ht"):
                     os.remove(outfile+".ht")
         url_data["time_stmp"] = int(time.time())
-        with open(join(md, "urls.txt"), "w") as fo:
+        with open(join(md, ".urls.json"), "w") as fo:
             json.dump(url_data, fo, indent=2)

@@ -37,7 +37,7 @@ class LocalCondaRepo(Log):
                 url = path_to_url(os.path.dirname(os.path.dirname(repo)))
                 c = Channel.from_url(url)
                 self.channels[c.name] = c
-                u_file = join(c.channel_location, "urls.txt")
+                u_file = join(c.channel_location, ".urls.json")
                 if isfile(u_file):
                     self.url_files.add(u_file)
         for uf in self.url_files:
@@ -130,21 +130,23 @@ class LocalConda(Log):
         common.confirm_yn()
         for axn in unlink_link_transaction._pfe.cache_actions:
             self.back_url(axn)
-        self.download_extract(unlink_link_transaction)
+        self.multi_download_extract(unlink_link_transaction)
         unlink_link_transaction.execute()
 
-    def download_extract(self, unlink_link_transaction):
-        if len(unlink_link_transaction._pfe.cache_actions):
+    def multi_download_extract(self, txn):
+        if len(txn._pfe.cache_actions):
             print("\nDownload Packages")
-            with ThreadPoolExecutor(max_workers=DEFAULT_DOWNLOAD_THREADS) as p:
-                for axn, exn in zip(unlink_link_transaction._pfe.cache_actions, unlink_link_transaction._pfe.extract_actions):
+            with ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as p:
+                for axn, exn in zip(txn._pfe.cache_actions, txn._pfe.extract_actions):
                     download = Download(axn, exn, self.lock)
                     p.submit(download.run)
             with Spinner("\nExtract Packages", fail_message="failed\n"):
-                for exn in unlink_link_transaction._pfe.extract_actions:
+                with ProcessPoolExecutor(max_workers=DEFAULT_THREADS) as p:
+                    p.map(Decompress, txn._pfe.extract_actions)
+                for exn in txn._pfe.extract_actions:
                     estract = Extract(exn)
                     estract.run()
-        unlink_link_transaction._pfe._executed = True
+        txn._pfe._executed = True
 
     def back_url(self, axn):
         c = Channel.from_url(axn.url)
