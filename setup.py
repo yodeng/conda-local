@@ -29,7 +29,7 @@ class Packages(object):
             for i in c:
                 if i.startswith("__") or i.endswith(".ini"):
                     continue
-                p = os.path.join(a, i)
+                p = os.path.join(a[len(self.source_dir)+1:], i)
                 df.append(p)
         return df
 
@@ -61,22 +61,32 @@ class Packages(object):
     def _extensions(self):
         exts = []
         for f in self.listdir:
-            e = Extension(self.name + "." + os.path.splitext(os.path.basename(f))[0],
-                          [f, ], extra_compile_args=["-O3", ],)
+            print(f, self.name + "." + os.path.splitext(f)
+                  [0].replace("/", "."))
+            e = Extension(self.name + "." + os.path.splitext(f)[0].replace("/", "."),
+                          [os.path.join(self.source_dir, f), ], extra_compile_args=["-O3", ],)
             e.cython_directives = {
                 'language_level': sysconfig._PY_VERSION_SHORT_NO_DOT[0]}
             exts.append(e)
         return exts
+
+    @property
+    def _package_dir(self):
+        pd = {}
+        for a, b, v in os.walk(self.source_dir):
+            p = a.replace(self.source_dir, self.name).replace("/", ".")
+            pd[p] = a.replace(self.source_dir, "src")
+        return pd
 
     def install(self, ext=False):
         kwargs = {}
         kwargs.update(
             name=self.name,
             version=self.version,
-            packages=[self.name, ],
+            packages=list(self._package_dir.keys()),
             license="MIT",
             url="https://github.com/yodeng/conda-local",
-            package_dir={self.name: os.path.basename(self.source_dir)},
+            package_dir=self._package_dir,
             install_requires=self.requirements,
             python_requires='>=3.8',
             long_description=self.description,

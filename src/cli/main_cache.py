@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding:utf-8
 
-from .src import *
+from ..src import *
 
 
 def configure_parser(sub_parsers):
@@ -30,7 +30,7 @@ def configure_parser(sub_parsers):
         default=[DEFAULT_MIRROR, ],
         help="conda mirror (Not channel) site, %s by default" % DEFAULT_MIRROR,
     )
-    p.set_defaults(func='.main_cache.execute')
+    p.set_defaults(func='.cli.main_cache.execute')
 
 
 def execute(args):
@@ -38,12 +38,13 @@ def execute(args):
     log = loger()
     mirrors = args.mirror
     repo_info = {}
-    for ms in mirrors:
-        urls = get_repo_urls(mirrors=ms)
-        if not len(urls):
-            raise CondaError(
-                "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
-        repo_info[ms] = urls
+    with Spinner("Find channels repodata from %s" % ", ".join(mirrors), fail_message="failed\n"):
+        for ms in mirrors:
+            urls = get_repo_urls(mirrors=ms)
+            if not len(urls):
+                raise CondaError(
+                    "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
+            repo_info[ms] = urls
     for ms, info in repo_info.items():
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,
@@ -62,9 +63,9 @@ def execute(args):
                 os.makedirs(outdir, exist_ok=True)
                 chn = Channel.from_url(repo)
                 url_data["channels"][c] = chn.base_url
-                hget(url=repo, outfile=outfile, quiet=args.quiet)
                 if isfile(outfile+".ht"):
                     os.remove(outfile+".ht")
+                hget(url=repo, outfile=outfile, quiet=args.quiet)
         url_data["time_stmp"] = int(time.time())
         with open(join(md, ".urls.json"), "w") as fo:
             json.dump(url_data, fo, indent=2)

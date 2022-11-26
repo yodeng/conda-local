@@ -2,7 +2,7 @@
 # coding:utf-8
 
 from conda.cli.main_remove import *
-from .src import *
+from ..src import *
 
 
 def configure_parser(sub_parsers):
@@ -52,7 +52,7 @@ def configure_parser(sub_parsers):
         help="Package names to %s from the environment." % name,
     )
     add_parser_prefix(p)
-    p.set_defaults(func='.main_remove.execute')
+    p.set_defaults(func='.cli.main_remove.execute')
 
 
 def execute(args):

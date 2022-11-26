@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # coding:utf-8
 
-from .src import *
+from ..src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Update a list of packages into a specified conda environment from local conda repodata."
+    description = "Installs a list of packages into a specified conda environment from local conda repodata."
     example = dedent("""
         Examples:
         
-            conda local update -n myenv pysam
+            conda local install -n myenv pysam
         """)
     p = sub_parsers.add_parser(
-        'update',
+        'install',
         description=description,
         help=description,
         epilog=example,
@@ -30,7 +30,7 @@ def configure_parser(sub_parsers):
         help="Do not display progress bar.",
     )
     p.add_argument(
-        '--force-reinstall',
+        "-f", '--force-reinstall',
         help=('Force creation of environment (removing a previously-existing '
               'environment of the same name).'),
         action='store_true',
@@ -52,14 +52,14 @@ def configure_parser(sub_parsers):
         'packages',
         metavar='package_spec',
         action="store",
-        nargs='+',
-        help="Packages to update in the conda environment.",
+        nargs='*',
+        help="Packages to install in the conda environment.",
     )
     add_parser_prefix(p)
-    p.set_defaults(func='.main_update.execute')
+    p.set_defaults(func='.cli.main_install.execute')
 
 
 def execute(args):
     prefix = determine_target_prefix(context, args)
     lc = LocalConda(prefix, args)
-    lc.update()
+    lc.install()

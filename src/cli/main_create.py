@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 # coding:utf-8
 
-from .src import *
+from ..src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Installs a list of packages into a specified conda environment from local conda repodata."
+    description = "Create a new conda environment from a list of specified packages."
     example = dedent("""
         Examples:
         
-            conda local install -n myenv pysam
+            conda local create -n myenv pysam
         """)
     p = sub_parsers.add_parser(
-        'install',
+        'create',
         description=description,
         help=description,
         epilog=example,
@@ -30,11 +30,10 @@ def configure_parser(sub_parsers):
         help="Do not display progress bar.",
     )
     p.add_argument(
-        "-f", '--force-reinstall',
-        help=('Force creation of environment (removing a previously-existing '
-              'environment of the same name).'),
-        action='store_true',
-        default=False,
+        "-y", "--yes",
+        action="store_true",
+        default=NULL,
+        help="Do not ask for confirmation.",
     )
     p.add_argument(
         '--dry-run',
@@ -43,23 +42,17 @@ def configure_parser(sub_parsers):
         default=False,
     )
     p.add_argument(
-        "-y", "--yes",
-        action="store_true",
-        default=NULL,
-        help="Do not ask for confirmation.",
-    )
-    p.add_argument(
         'packages',
         metavar='package_spec',
         action="store",
         nargs='*',
-        help="Packages to install in the conda environment.",
+        help="Packages to install or update in the conda environment.",
     )
     add_parser_prefix(p)
-    p.set_defaults(func='.main_install.execute')
+    p.set_defaults(func='.cli.main_create.execute')
 
 
 def execute(args):
     prefix = determine_target_prefix(context, args)
     lc = LocalConda(prefix, args)
-    lc.install()
+    lc.create()

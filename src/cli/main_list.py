@@ -2,7 +2,7 @@
 # coding:utf-8
 
 
-from .src import *
+from ..src import *
 
 
 def configure_parser(sub_parsers):
@@ -18,7 +18,7 @@ def configure_parser(sub_parsers):
         description=description,
         epilog=example,
     )
-    p.set_defaults(func='.main_list.execute')
+    p.set_defaults(func='.cli.main_list.execute')
 
 
 def execute(args):
