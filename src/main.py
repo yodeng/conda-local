@@ -32,6 +32,9 @@ def main():
     os.environ["CONDA_AUTO_UPDATE_CONDA"] = "false"
     context.__init__(argparse_args=args)
     init_loggers(context)
+    stdoutlog = getLogger("conda.stdoutlog")
+    for h in stdoutlog.handlers:
+        stdoutlog.removeHandler(h)
     return conda_exception_handler(do_call, args)
 
 
