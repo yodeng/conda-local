@@ -36,8 +36,8 @@ class LocalCondaRepo(Log):
             if subdir in context.subdirs:
                 url = path_to_url(os.path.dirname(os.path.dirname(repo)))
                 c = Channel.from_url(url)
-                if c.name in self.channels:
-                    LOCAL_CONDA_LOG.debug("dump local channels: %s and %s", join(
+                if c.name in self.channels and c.channel_location != self.channels[c.name].channel_location:
+                    LOCAL_CONDA_LOG.debug("duplicate local channels: %s and %s", join(
                         c.channel_location, c.name, subdir), join(self.channels[c.name].channel_location, c.name, subdir))
                 self.channels[c.name] = c
                 u_file = join(c.channel_location, ".urls.json")
