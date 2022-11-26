@@ -6,19 +6,19 @@ from .src import *
 
 
 def configure_parser(sub_parsers):
-    description = "List all available (cached) local conda repodata"
+    description = "List all available (cached) local conda repodata."
     example = dedent("""
         Examples:
         
-            conda local listrepo
+            conda local list
         """)
     p = sub_parsers.add_parser(
-        'listrepo',
+        'list',
         help=description,
         description=description,
         epilog=example,
     )
-    p.set_defaults(func='.main_listrepo.execute')
+    p.set_defaults(func='.main_list.execute')
 
 
 def execute(args):
