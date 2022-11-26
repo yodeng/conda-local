@@ -5,14 +5,14 @@ from .src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Cache local conda repodata"
+    description = "Cache local conda repodata."
     example = dedent("""
         Examples:
         
-            conda local cacherepo
+            conda local cache
         """)
     p = sub_parsers.add_parser(
-        'cacherepo',
+        'cache',
         description=description,
         help=description,
         epilog=example,
@@ -30,7 +30,7 @@ def configure_parser(sub_parsers):
         default=[DEFAULT_MIRROR, ],
         help="conda mirror (Not channel) site, %s by default" % DEFAULT_MIRROR,
     )
-    p.set_defaults(func='.main_cacherepo.execute')
+    p.set_defaults(func='.main_cache.execute')
 
 
 def execute(args):

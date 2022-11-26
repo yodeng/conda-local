@@ -6,7 +6,7 @@ from .src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Remove a list of packages from a specified conda environment"
+    description = "Remove a list of packages from a specified conda environment."
     example = dedent("""
         Examples:
         
