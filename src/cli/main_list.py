@@ -46,6 +46,9 @@ def execute(args):
                 for chn, _ in info["channels"].items():
                     if chn in chn_info:
                         chn_info[chn]["cache time"] = chn_time
+        if not len(chn_info):
+            raise CondaError(
+                "No cached repodata found, you might need to run 'conda local cache'")
     for cn, info in sorted(chn_info.items(), key=lambda x: sum(list(x[1]['packages'].values())), reverse=True):
         print(cstring(cn + ":", 1, 34))
         for k in ['cache time', 'url', 'packages', 'size']:
