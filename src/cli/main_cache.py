@@ -38,6 +38,13 @@ def execute(args):
     log = loger()
     mirrors = args.mirror
     repo_info = {}
+    localrepo = LocalCondaRepo()
+    localrepo.parse_repos()
+    if len(localrepo.repos):
+        common.confirm_yn("WARNING: conda cached repodata already exists\n"
+                          "\nUpdate",
+                          default='no',
+                          dry_run=False)
     with Spinner("Find channels repodata from %s" % ", ".join(mirrors), fail_message="failed\n"):
         for ms in mirrors:
             urls = get_repo_urls(mirrors=ms)

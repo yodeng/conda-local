@@ -17,7 +17,7 @@ $ pip install git+https://github.com/yodeng/conda-local.git
 
 ### Usage
 
-Before using `conda-local`, command `conda local cache` should be done. This will cache and download all repodata to `LOCAL_CONDA_DIR` (default `$HOME/.conda`) from the default conda mirror `https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud` . And then all subcommands of `conda-local` will use this cache for action instead of remote channels. If not, `conda-local` still fetch remote matedata that is the same as conda.
+Before using `conda-local`, command `conda local cache` should be done. This will cache and download all repodata to `LOCAL_CONDA_DIR` (default `$HOME/.conda`) from the default conda mirror [https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud](https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud) . And then all subcommands of `conda-local` will use this cache for action instead of remote channels. If not, `conda-local` still fetch remote matedata that is the same as conda.
 
 ```
 $ conda local cache
