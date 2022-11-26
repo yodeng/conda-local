@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding:utf-8
+
 from .utils import *
 
 from conda.core.path_actions import *
@@ -6,6 +9,7 @@ __all__ = ["Extract", "Download", "Decompress"]
 
 
 class Download(object):
+
     def __init__(self, axn, exn, lock):
         self.axn = axn
         self.exn = exn
@@ -88,6 +92,7 @@ class Download(object):
 
 
 class Extract(object):
+
     def __init__(self, exn):
         self.exn = exn
         exn.verify()

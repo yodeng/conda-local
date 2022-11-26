@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding:utf-8
 
-from .src import *
+from ..src import *
 
 
 def configure_parser(sub_parsers):
@@ -41,7 +41,7 @@ def configure_parser(sub_parsers):
         nargs='?',
         help=SUPPRESS,
     )
-    p.set_defaults(func='.main_search.execute')
+    p.set_defaults(func='.cli.main_search.execute')
 
 
 def execute(args):
