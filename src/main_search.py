@@ -5,7 +5,7 @@ from .src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Search packages from local conda repos."
+    description = "Search for packages from local conda repo and display associated information."
     example = dedent("""
         Examples:
             
@@ -16,7 +16,7 @@ def configure_parser(sub_parsers):
             conda local search numpy[subdir=linux-64]
             conda local search 'numpy>=1.12'
             conda local search conda-forge::numpy
-            conda local search 'numpy[channel=conda-forge, subdir=linux-64]
+            conda local search 'numpy[channel=conda-forge, subdir=linux-64]'
         """)
     p = sub_parsers.add_parser(
         'search',
