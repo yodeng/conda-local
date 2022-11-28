@@ -9,14 +9,14 @@ import json
 import hashlib
 import requests
 
-from hget import hget
+from tqdm import tqdm
 from lxml import etree
 
-from threading import Lock
 from textwrap import dedent
 from importlib import import_module
 from collections import defaultdict
 from logging import getLogger, Formatter
+from threading import Lock, currentThread
 from urllib.parse import urlsplit, urlunsplit
 from argparse import ArgumentParser, SUPPRESS
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
@@ -27,9 +27,9 @@ from conda.cli.main import init_loggers
 from conda.cli.main_search import pretty_record
 from conda.cli.conda_argparse import add_parser_prefix, ArgumentParser as CondaArgumentParser
 
+from conda.common.io import Spinner
 from conda.common.url import path_to_url
 from conda.common.constants import NULL
-from conda.common.io import ProgressBar, Spinner
 from conda.common.path import paths_equal, is_package_file
 
 from conda.core.solve import Solver
