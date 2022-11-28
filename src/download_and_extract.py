@@ -31,7 +31,7 @@ class Download(object):
         if isfile(outpath):
             offset = os.path.getsize(outpath)
             if offset == size:
-                if check_md5(outpath) == axn.md5:
+                if get_md5(outpath) == axn.md5:
                     LOCAL_CONDA_LOG.info("%s already esists", outpath)
                     return
                 else:
@@ -141,7 +141,7 @@ class Extract(object):
             self.extract()
         except Exception as e:
             self.exn.reverse()
-            return e
+            raise e
         else:
             self.exn.cleanup()
 

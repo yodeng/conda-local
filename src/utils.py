@@ -11,15 +11,15 @@ import requests
 
 from hget import hget
 from lxml import etree
+
 from threading import Lock
 from textwrap import dedent
-from argparse import ArgumentParser, SUPPRESS
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-
 from importlib import import_module
 from collections import defaultdict
 from logging import getLogger, Formatter
 from urllib.parse import urlsplit, urlunsplit
+from argparse import ArgumentParser, SUPPRESS
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 from os.path import abspath, dirname, basename, exists, isdir, isfile, join
 
 from conda.cli import common
@@ -30,14 +30,13 @@ from conda.cli.conda_argparse import add_parser_prefix, ArgumentParser as CondaA
 from conda.common.url import path_to_url
 from conda.common.constants import NULL
 from conda.common.io import ProgressBar, Spinner
-from conda.common.path import paths_equal, is_package_file, strip_pkg_extension
+from conda.common.path import paths_equal, is_package_file
 
 from conda.core.solve import Solver
 from conda.core.subdir_data import SubdirData
 from conda.core.prefix_data import PrefixData
 from conda.core.index import calculate_channel_urls
 from conda.core.link import PrefixSetup, UnlinkLinkTransaction
-from conda.core.path_actions import CacheUrlAction, ExtractPackageAction
 from conda.core.package_cache_data import PackageCacheData
 
 from conda.base.context import context, determine_target_prefix
@@ -46,18 +45,15 @@ from conda.base.constants import UpdateModifier, ROOT_ENV_NAME
 from conda._vendor.toolz import concat
 from conda._vendor.boltons.setutils import IndexedSet
 
-from conda.gateways.disk.read import lexists
+from conda.gateways.logging import StdStreamHandler
 from conda.gateways.disk.test import is_conda_environment
-from conda.gateways.disk.create import extract_tarball
 from conda.gateways.disk.delete import rm_rf, delete_trash, path_is_clean
-from conda.gateways.logging import initialize_logging, StdStreamHandler
 
 from conda.models.match_spec import MatchSpec
 from conda.models.version import VersionOrder
 from conda.models.channel import Channel, all_channel_urls
 
 from conda.auxlib.ish import dals
-from conda.notices import notices
 from conda.utils import human_bytes
 from conda.misc import explicit, touch_nonadmin
 from conda.exceptions import *
@@ -106,16 +102,7 @@ def fast_url(urls):
     return [i[0] for i in sorted(time_record, key=lambda x:float(x[1]))]
 
 
-def download(url, target_full_path, **kwargs):
-    if isfile(target_full_path) and os.path.getsize(target_full_path) == kwargs.get("size", 0):
-        if check_md5(target_full_path) != kwargs.get("md5", ""):
-            os.remove(target_full_path)
-        else:
-            return
-    hget(url, target_full_path, quiet=True)
-
-
-def check_md5(filename):
+def get_md5(filename):
     hm = hashlib.md5()
     if not os.path.isfile(filename):
         return ""
@@ -153,10 +140,9 @@ def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):
     repo_urls = nested_dict()
     res = requests.get(url=mirrors)
     h = etree.HTML(res.content)
-    chn = [i for i in h.xpath("//a/@href")
+    chn = [i.strip("/") for i in h.xpath("//a/@href")
            if re.match("^\w", i) and i.endswith("/")]
-    for c in chn:
-        c = c.strip("/")
+    for c in sorted(chn):
         for a in context.subdirs:
             url = join(mirrors, c, a, repodata_fn)
             r = requests.head(url)
