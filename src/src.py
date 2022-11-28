@@ -138,13 +138,14 @@ class LocalConda(Log):
 
     def multi_download_extract(self, txn):
         if len(txn._pfe.cache_actions):
+            n_multi = min(len(txn._pfe.cache_actions), DEFAULT_THREADS)
             print("\nDownload Packages")
-            with ThreadPoolExecutor(max_workers=DEFAULT_THREADS) as p:
+            with ThreadPoolExecutor(max_workers=n_multi) as p:
                 for axn, exn in zip(txn._pfe.cache_actions, txn._pfe.extract_actions):
                     download = Download(axn, exn, self.lock)
                     p.submit(download.run)
             with Spinner("\nExtract Packages", fail_message="failed\n"):
-                with ProcessPoolExecutor(max_workers=DEFAULT_THREADS) as p:
+                with ProcessPoolExecutor(max_workers=n_multi) as p:
                     p.map(Decompress, txn._pfe.extract_actions)
                 for exn in txn._pfe.extract_actions:
                     estract = Extract(exn)

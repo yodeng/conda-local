@@ -30,8 +30,14 @@ def execute(args):
             chn = basename(dirname(dirname(repofile)))
             url = localrepo.channels_url[chn]
             chn_info[chn]["url"] = cstring(url, 4, 34)
-            with open(repofile) as fi:
-                repodata = json.load(fi)
+            try:
+                with open(repofile) as fi:
+                    repodata = json.load(fi)
+            except:
+                LOCAL_CONDA_LOG.warn(
+                    "Load channel '%s' error, removed this channel.", chn)
+                os.remove(repofile)
+                continue
             subdir = repodata['info'].get(
                 'subdir', basename(dirname(repofile)))
             chn_info[chn]["packages"][subdir] = len(repodata["packages"])
