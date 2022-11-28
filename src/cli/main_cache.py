@@ -2,6 +2,7 @@
 # coding:utf-8
 
 from ..src import *
+from ..download_and_extract import *
 
 
 def configure_parser(sub_parsers):
@@ -34,17 +35,19 @@ def configure_parser(sub_parsers):
 
 
 def execute(args):
-    from hget.utils import loger
-    log = loger()
     mirrors = args.mirror
     repo_info = {}
     localrepo = LocalCondaRepo()
     localrepo.parse_repos()
-    if len(localrepo.repos):
-        common.confirm_yn("WARNING: conda cached repodata already exists\n"
-                          "\nUpdate",
-                          default='no',
-                          dry_run=False)
+    for ms in mirrors:
+        n = urlsplit(ms)
+        md = join(LocalCondaRepo.defaut_repo_dir,
+                  n.hostname, n.path.strip("/"))
+        if os.path.isfile(join(md, ".urls.json")):
+            common.confirm_yn("WARNING: a conda cached repodata already exists\n"
+                              "\nUpdate",
+                              default='no',
+                              dry_run=False)
     with Spinner("Find channels repodata from %s" % ", ".join(mirrors), fail_message="failed\n"):
         for ms in mirrors:
             urls = get_repo_urls(mirrors=ms)
@@ -52,6 +55,7 @@ def execute(args):
                 raise CondaError(
                     "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
             repo_info[ms] = urls
+    print("\nDownload repodata (%d threads)" % DEFAULT_THREADS)
     for ms, info in repo_info.items():
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,
@@ -63,6 +67,7 @@ def execute(args):
                     url_data = json.load(fi)
             except:
                 pass
+        download_args = []
         for c, arc in info.items():
             for a, repo in arc.items():
                 outdir = join(md, c, a)
@@ -70,9 +75,11 @@ def execute(args):
                 os.makedirs(outdir, exist_ok=True)
                 chn = Channel.from_url(repo)
                 url_data["channels"][c] = chn.base_url
-                if isfile(outfile+".ht"):
-                    os.remove(outfile+".ht")
-                hget(url=repo, outfile=outfile, quiet=args.quiet)
+                download_args.append((repo, outfile))
+        with ThreadPoolExecutor(DEFAULT_THREADS) as p:
+            for repo, outfile in download_args:
+                p.submit(Download.download_file, repo, outfile)
         url_data["time_stmp"] = int(time.time())
         with open(join(md, ".urls.json"), "w") as fo:
             json.dump(url_data, fo, indent=2)
+    LOCAL_CONDA_LOG.info("Cache repodata done.")

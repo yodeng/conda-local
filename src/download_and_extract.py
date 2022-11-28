@@ -10,6 +10,11 @@ __all__ = ["Extract", "Download", "Decompress"]
 
 class Download(object):
 
+    bar_format = "{desc}{bar} | {percentage:3.0f}% "
+    cur = currentThread()
+    pos = None if cur.name == "MainThread" else int(
+        cur.name.rsplit("_", 1)[1])
+
     def __init__(self, axn, exn, lock):
         self.axn = axn
         self.exn = exn
@@ -19,7 +24,6 @@ class Download(object):
         self.target_pkgs_dir = axn.target_pkgs_dir
         os.makedirs(self.target_pkgs_dir, exist_ok=True)
         self.target_package_cache = PackageCacheData(self.target_pkgs_dir)
-        self.progress_bar = None
 
     def download(self):
         prec_or_spec = self.exn.record_or_spec
@@ -48,20 +52,20 @@ class Download(object):
         if len(size_str) > 0:
             desc += "%-9s | " % size_str
         md5 = hashlib.md5()
-        self.progress_bar = ProgressBar(desc, not context.quiet)
         with requests.get(url, headers=headers, stream=True) as res:
             if res.headers.get("Accept-Ranges", "") != "bytes":
                 if isfile(outpath):
                     os.remove(outpath)
                     offset = 0
             content_length = float(res.headers.get('Content-Length', 0))
-            with open(outpath, "ab") as fo:
-                for chunk in res.iter_content(chunk_size=2 ** 14):
-                    if chunk:
-                        offset += len(chunk)
-                        fo.write(chunk)
-                        md5.update(chunk)
-                        self.progress_bar.update_to(offset/content_length)
+            with tqdm(desc=desc, position=self.pos, initial=offset, total=content_length, bar_format=self.bar_format, ascii=True, disable=context.quiet) as progress_bar:
+                with open(outpath, "ab") as fo:
+                    for chunk in res.iter_content(chunk_size=2 ** 14):
+                        if chunk:
+                            fo.write(chunk)
+                            fo.flush()
+                            md5.update(chunk)
+                            progress_bar.update(len(chunk))
         actual_checksum = md5.hexdigest()
         if actual_checksum != axn.md5:
             LOCAL_CONDA_LOG.debug("md5 mismatch for download: %s (%s != %s)",
@@ -78,6 +82,31 @@ class Download(object):
         with self.lock:
             self.target_package_cache._urls_data.add_url(url)
 
+    @classmethod
+    def download_file(cls, url, outpath, con_tinue=False):
+        chn = basename(dirname(dirname(url)))
+        subdir = basename(dirname(url))
+        desc = '%-30.30s | ' % (chn + "(%s)" % subdir)
+        offset = 0
+        if con_tinue and isfile(outpath):
+            offset = os.path.getsize(outpath)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+            "Range": "bytes={}-".format(offset)}
+        with requests.get(url, headers=headers, stream=True) as res:
+            if res.headers.get("Accept-Ranges", "") != "bytes":
+                if isfile(outpath):
+                    os.remove(outpath)
+                    offset = 0
+            content_length = float(res.headers.get('Content-Length', 0))
+            with tqdm(desc=desc, position=cls.pos, initial=offset, total=content_length, bar_format=cls.bar_format, ascii=True, disable=context.quiet) as progress_bar:
+                with open(outpath, "ab") as fo:
+                    for chunk in res.iter_content(chunk_size=2 ** 14):
+                        if chunk:
+                            fo.write(chunk)
+                            fo.flush()
+                            progress_bar.update(len(chunk))
+
     def run(self):
         try:
             self.download()
@@ -86,9 +115,6 @@ class Download(object):
             return e
         else:
             self.axn.cleanup()
-            self.progress_bar.finish()
-        finally:
-            self.progress_bar.close()
 
 
 class Extract(object):

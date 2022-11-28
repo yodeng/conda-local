@@ -48,7 +48,7 @@ def execute(args):
                 with open(uf) as fi:
                     info = json.load(fi)
                 chn_time = time.strftime(
-                    "%F %X", time.gmtime(info["time_stmp"]))
+                    "%F %X", time.localtime(info["time_stmp"]))
                 for chn, _ in info["channels"].items():
                     if chn in chn_info:
                         chn_info[chn]["cache time"] = chn_time
