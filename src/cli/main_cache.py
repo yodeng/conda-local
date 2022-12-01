@@ -70,15 +70,16 @@ def execute(args):
         download_args = []
         for c, arc in info.items():
             for a, repo in arc.items():
+                url = repo["url"]
                 outdir = join(md, c, a)
-                outfile = join(outdir, os.path.basename(repo))
+                outfile = join(outdir, os.path.basename(url))
                 os.makedirs(outdir, exist_ok=True)
-                chn = Channel.from_url(repo)
+                chn = Channel.from_url(url)
                 url_data["channels"][c] = chn.base_url
-                download_args.append((repo, outfile))
+                download_args.append((url, outfile))
         with ThreadPoolExecutor(DEFAULT_THREADS) as p:
-            for repo, outfile in download_args:
-                p.submit(Download.download_file, repo, outfile)
+            for url, outfile in download_args:
+                p.submit(Download.download_file, url, outfile)
         url_data["time_stmp"] = int(time.time())
         with open(join(md, ".urls.json"), "w") as fo:
             json.dump(url_data, fo, indent=2)
