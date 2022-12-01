@@ -154,5 +154,6 @@ def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):
                 continue
             else:
                 if content_length > 0:
-                    repo_urls[c][a] = url
+                    repo_urls[c][a]["url"] = url
+                    repo_urls[c][a]["size"] = content_length
     return repo_urls
