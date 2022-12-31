@@ -88,6 +88,23 @@ def add_version(p):
                    )
 
 
+def add_parse_no_default_channels(p):
+    p.add_argument("--without-default-channels", action="store_true", default=False,
+                   help="Do not search default or .condarc channels. Requires -c / --channel."
+                   )
+
+
+def new_channel_names(channels, args):
+    chl_names = list(channels)
+    if hasattr(args, "without_default_channels") and args.without_default_channels:
+        if hasattr(args, "channel") and not args.channel:
+            raise ArgumentError(
+                "At least one -c / --channel flag must be supplied when using --without-default-channels.")
+        if "defaults" in chl_names:
+            chl_names.remove("defaults")
+    return tuple(chl_names)
+
+
 def fast_url(urls):
     delt = 60
     time_record = []

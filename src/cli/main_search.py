@@ -30,6 +30,7 @@ def configure_parser(sub_parsers):
         action="append",
         help="channel to search package",
     )
+    add_parse_no_default_channels(p)
     p.add_argument(
         '-d', "--detail",
         action="store_true",
@@ -54,7 +55,8 @@ def execute(args):
     _channel_urls = (spec_channel,) if spec_channel else context.channels
     local_repo = LocalCondaRepo()
     local_repo.parse_repos()
-    channel_urls = LocalConda.file_channels(_channel_urls, local_repo)
+    channel_urls = LocalConda.file_channels(
+        new_channel_names(_channel_urls, args), local_repo)
     local_repo.log.info("Using local conda channel: %s", cstring(", ".join(
         flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channel_urls])), 0, 34))
     with Spinner("Loading local channels", not context.verbosity and not context.quiet, context.json):
