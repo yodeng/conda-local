@@ -41,6 +41,7 @@ def configure_parser(sub_parsers):
         action='store_true',
         default=False,
     )
+    add_parse_no_default_channels(p)
     p.add_argument(
         'packages',
         metavar='package_spec',
