@@ -5,7 +5,7 @@
 ### Requirement
 
 + Linux-64
-+ Pyhon >= 3.8
++ Pyhon >= 2.7.10
 
 ### Install
 
@@ -450,7 +450,3 @@ idaholab:
     - linux-64: 0 B
     - noarch: 0 B
 ```
-
-
-
-

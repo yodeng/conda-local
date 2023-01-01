@@ -92,7 +92,7 @@ class Packages(object):
             package_dir=self._package_dir,
             package_data={self.name: ["*.ini", ]},
             install_requires=self.requirements,
-            python_requires='>=3.8',
+            python_requires=">=2.7.10",
             long_description=self.description,
             long_description_content_type='text/markdown',
             entry_points={'console_scripts': self._entrys},
