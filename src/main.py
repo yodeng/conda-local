@@ -7,7 +7,10 @@ from .cli import *
 
 def create_parser():
     p = localArgumentParser()
-    sub_parsers = p.add_subparsers()
+    sub_parsers = p.add_subparsers(
+        metavar='command',
+        dest='cmd',
+    )
     main_install.configure_parser(sub_parsers)
     main_create.configure_parser(sub_parsers)
     main_update.configure_parser(sub_parsers)

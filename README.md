@@ -30,21 +30,21 @@ All of the usage is documented via the `--help` flag.
 
 ```
 $ conda local --help 
-usage: conda-local [-h] [-v] {install,create,update,remove,search,cache,list} ...
+usage: conda-local [-h] [-v] command ...
 
 positional arguments:
-  {install,create,update,remove,search,cache,list}
-    install             Installs a list of packages into a specified conda environment from local conda repodata.
-    create              Create a new conda environment from a list of specified packages.
-    update              Update a list of packages into a specified conda environment from local conda repodata.
-    remove              Remove a list of packages from a specified conda environment.
-    search              Search for packages from local conda repo and display associated information.
-    cache               Cache local conda repodata.
-    list                List all available (cached) local conda repodata.
+  command
+    install      Installs a list of packages into a specified conda environment from local conda repodata.
+    create       Create a new conda environment from a list of specified packages.
+    update       Update a list of packages into a specified conda environment from local conda repodata.
+    remove       Remove a list of packages from a specified conda environment.
+    search       Search for packages from local conda repo and display associated information.
+    cache        Cache local conda repodata.
+    list         List all available (cached) local conda repodata.
 
 optional arguments:
-  -h, --help            Show this help message and exit.
-  -v, --version         show program's version number and exit
+  -h, --help     Show this help message and exit.
+  -v, --version  show program's version number and exit
 ```
 
 ### Cache list
@@ -450,4 +450,7 @@ idaholab:
     - linux-64: 0 B
     - noarch: 0 B
 ```
+
+
+
 

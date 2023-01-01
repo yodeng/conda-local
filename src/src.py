@@ -125,6 +125,12 @@ class LocalConda(Log):
         except (UnsatisfiableError, SystemExit):
             unlink_link_transaction = self.solver.solve_for_transaction(
                 update_modifier=NULL)
+        except (ResolvePackageNotFound, PackagesNotFoundError) as e:
+            if isinstance(e, PackagesNotFoundError):
+                raise e
+            channel_urls = [c.base_url if not c.base_url.startswith(
+                "file://") else c.base_url[7:] for c in self.solver.channels]
+            raise PackagesNotFoundError(e._formatted_chains, channel_urls)
         if unlink_link_transaction.nothing_to_do:
             print('\n# All requested packages already installed.\n')
             return
@@ -202,6 +208,11 @@ class localArgumentParser(CondaArgumentParser, ArgumentParser):
 
     def print_help(self):
         ArgumentParser.print_help(self)
+
+    def error(self, message):
+        self.print_usage(sys.stderr)
+        args = {'prog': self.prog.replace("-", " "), 'message': message}
+        self.exit('%(prog)s: error: %(message)s' % args)
 
 
 class localExceptionHandler(ExceptionHandler):
