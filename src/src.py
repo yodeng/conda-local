@@ -197,8 +197,8 @@ class LocalConda(Log):
             for spec in self.specs:
                 spec = MatchSpec(spec)
                 if not spec.is_name_only_spec:
-                    raise CondaError("Invalid spec for 'conda update': %s\n"
-                                     "Use 'conda install' instead." % spec)
+                    raise CondaError(
+                        "Invalid spec for 'conda local update': %s\nUse 'conda local install' instead." % spec)
                 if not prefix_data.get(spec.name, None):
                     raise PackageNotInstalledError(self.prefix, spec.name)
         self.install("update")
@@ -212,7 +212,7 @@ class localArgumentParser(CondaArgumentParser, ArgumentParser):
     def error(self, message):
         self.print_usage(sys.stderr)
         args = {'prog': self.prog.replace("-", " "), 'message': message}
-        self.exit('%(prog)s: error: %(message)s' % args)
+        self.exit('{prog}: error: {message}'.format(**args))
 
 
 class localExceptionHandler(ExceptionHandler):

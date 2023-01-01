@@ -72,7 +72,7 @@ def execute(args):
                                         '       add -n NAME or -p PREFIX option')
         if not isfile(join(prefix, 'conda-meta', 'history')):
             raise DirectoryNotACondaEnvironmentError(prefix)
-        print("\nRemove all packages in environment %s:\n" % prefix, file=sys.stderr)
+        sys.stderr.write("\nRemove all packages in environment %s:\n" % prefix)
         if 'package_names' in args:
             stp = PrefixSetup(
                 target_prefix=prefix,
