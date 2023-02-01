@@ -156,6 +156,7 @@ def cstring(string, mode=0, fore=37, back=40):
 def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):
     repo_urls = nested_dict()
     res = requests.get(url=mirrors)
+    mirrors = res.url
     h = etree.HTML(res.content)
     chn = [i.strip("/") for i in h.xpath("//a/@href")
            if re.match("^\w", i) and i.endswith("/")]
