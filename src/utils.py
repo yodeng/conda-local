@@ -76,6 +76,12 @@ def _get_log():
 
 LOCAL_CONDA_LOG = _get_log()
 
+default_headers = {
+    'Connection': 'close',
+    'Accept-Encoding': 'identity',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36'
+}
+
 
 def flatten(x):
     return [y for l in x for y in flatten(
@@ -154,8 +160,9 @@ def cstring(string, mode=0, fore=37, back=40):
 
 
 def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):
+    headers = default_headers
     repo_urls = nested_dict()
-    res = requests.get(url=mirrors)
+    res = requests.get(url=mirrors, headers=headers)
     mirrors = res.url
     h = etree.HTML(res.content)
     chn = [i.strip("/") for i in h.xpath("//a/@href")
@@ -163,7 +170,7 @@ def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):
     for c in sorted(chn):
         for a in context.subdirs:
             url = join(mirrors, c, a, repodata_fn)
-            r = requests.head(url)
+            r = requests.head(url, headers=headers)
             if r.status_code != 200:
                 continue
             try:

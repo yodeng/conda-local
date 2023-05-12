@@ -24,6 +24,7 @@ class Download(object):
         self.target_pkgs_dir = axn.target_pkgs_dir
         os.makedirs(self.target_pkgs_dir, exist_ok=True)
         self.target_package_cache = PackageCacheData(self.target_pkgs_dir)
+        self.headers = default_headers
 
     def download(self):
         prec_or_spec = self.exn.record_or_spec
@@ -41,7 +42,8 @@ class Download(object):
                 else:
                     os.remove(outpath)
                     offset = 0
-        headers = {"Range": "bytes={}-".format(offset)}
+        headers = self.headers.copy()
+        headers["Range"] = "bytes={}-".format(offset)
         desc = ''
         if prec_or_spec.name and prec_or_spec.version:
             desc = "%s-%s" % (prec_or_spec.name or '',
@@ -90,9 +92,8 @@ class Download(object):
         offset = 0
         if con_tinue and isfile(outpath):
             offset = os.path.getsize(outpath)
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
-            "Range": "bytes={}-".format(offset)}
+        headers = default_headers.copy()
+        headers["Range"] = "bytes={}-".format(offset)
         with requests.get(url, headers=headers, stream=True) as res:
             if res.headers.get("Accept-Ranges", "") != "bytes":
                 if isfile(outpath):
