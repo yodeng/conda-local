@@ -138,6 +138,11 @@ def get_md5(filename):
     return hm.hexdigest()
 
 
+def mkdir(path):
+    if not isdir(path):
+        os.makedirs(path)
+
+
 def nested_dict():
     return defaultdict(nested_dict)
 

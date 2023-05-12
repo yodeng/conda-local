@@ -73,7 +73,7 @@ def execute(args):
                 url = repo["url"]
                 outdir = join(md, c, a)
                 outfile = join(outdir, os.path.basename(url))
-                os.makedirs(outdir, exist_ok=True)
+                mkdir(outdir)
                 chn = Channel.from_url(url)
                 url_data["channels"][c] = chn.base_url
                 download_args.append((url, outfile))

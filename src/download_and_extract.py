@@ -22,7 +22,7 @@ class Download(object):
         exn.verify()
         self.lock = lock
         self.target_pkgs_dir = axn.target_pkgs_dir
-        os.makedirs(self.target_pkgs_dir, exist_ok=True)
+        mkdir(self.target_pkgs_dir)
         self.target_package_cache = PackageCacheData(self.target_pkgs_dir)
         self.headers = default_headers
 
@@ -124,7 +124,7 @@ class Extract(object):
         self.exn = exn
         exn.verify()
         self.target_pkgs_dir = exn.target_pkgs_dir
-        os.makedirs(self.target_pkgs_dir, exist_ok=True)
+        mkdir(self.target_pkgs_dir)
         self.target_package_cache = PackageCacheData(self.target_pkgs_dir)
 
     def extract(self):
