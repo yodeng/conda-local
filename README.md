@@ -29,7 +29,7 @@ Find channels repodata from https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud:
 All of the usage is documented via the `--help` flag.
 
 ```
-$ conda local --help 
+$ conda local --help
 usage: conda-local [-h] [-v] command ...
 
 positional arguments:
@@ -39,12 +39,14 @@ positional arguments:
     update       Update a list of packages into a specified conda environment from local conda repodata.
     remove       Remove a list of packages from a specified conda environment.
     search       Search for packages from local conda repo and display associated information.
+    download     download all packages include depency from local conda repodata.
     cache        Cache local conda repodata.
     list         List all available (cached) local conda repodata.
 
 optional arguments:
   -h, --help     Show this help message and exit.
   -v, --version  show program's version number and exit
+
 ```
 
 ### Cache list

@@ -79,7 +79,7 @@ class LocalConda(Log):
         self.local_repo.parse_repos()
         channel_names = new_channel_names(context.channels, self.args)
         channels = self.file_channels(channel_names, self.local_repo)
-        self.log.info("Using local conda channel: %s", cstring(", ".join(
+        self.log.info("Using conda channel: %s", cstring(", ".join(
             flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channels])), 0, 34))
         solver = localSolver(self.prefix, channels,
                              context.subdirs, specs_to_add=self.specs)
@@ -134,12 +134,25 @@ class LocalConda(Log):
         if unlink_link_transaction.nothing_to_do:
             print('\n# All requested packages already installed.\n')
             return
-        unlink_link_transaction.print_transaction_summary()
+        all_links = unlink_link_transaction.print_transaction_summary(
+            context.download_only)
         if self.args.dry_run:
             raise DryRunExit()
         common.confirm_yn()
         for axn in unlink_link_transaction._pfe.cache_actions:
             self.back_url(axn)
+        if context.download_only:
+            mkdir(self.download_dir)
+            print("\nDownload Packages")
+            with ThreadPoolExecutor(max_workers=min(len(all_links[0]["LINK"]), DEFAULT_THREADS)) as p:
+                for pkgs in all_links[0]["LINK"]:
+                    url = self.back_url(pkgs)
+                    outpath = join(self.download_dir, basename(url))
+                    p.submit(Download.download_file, url, outpath, True)
+            print()
+            self.log.info(
+                "All packages and depency saved in '%s' directory.", self.download_dir)
+            return
         self.multi_download_extract(unlink_link_transaction)
         unlink_link_transaction.execute()
 
@@ -164,6 +177,7 @@ class LocalConda(Log):
         if c.name in self.local_repo.channels_url and c.base_url in axn.url:
             axn.url = axn.url.replace(
                 c.base_url, self.local_repo.channels_url[c.name])
+        return axn.url
 
     def create(self):
         if is_conda_environment(self.prefix):
@@ -191,6 +205,13 @@ class LocalConda(Log):
         touch_nonadmin(self.prefix)
         print_activate(self.args.name or self.prefix)
 
+    def download(self):
+        self.prefix = basename(tempfile.mktemp())
+        self.args.force_reinstall = True
+        self.download_dir = abspath(self.args.outdir)
+        context.download_only = True
+        self.install("create")
+
     def update(self):
         if context.update_modifier != UpdateModifier.UPDATE_ALL:
             prefix_data = PrefixData(self.prefix)
@@ -217,9 +238,6 @@ class localArgumentParser(CondaArgumentParser, ArgumentParser):
 
 class localExceptionHandler(ExceptionHandler):
 
-    def __init__(self, *args, **kwargs):
-        super(localExceptionHandler, self).__init__(*args, **kwargs)
-
     def _calculate_ask_do_upload(self):
         return False, False
 
@@ -231,9 +249,6 @@ def conda_exception_handler(func, *args, **kwargs):
 
 
 class localSolver(Solver):
-
-    def __init__(self, *args, **kwargs):
-        super(localSolver, self).__init__(*args, **kwargs)
 
     def solve_for_transaction(self, update_modifier=NULL, deps_modifier=NULL, prune=NULL,
                               ignore_pinned=NULL, force_remove=NULL, force_reinstall=NULL,
@@ -247,7 +262,43 @@ class localSolver(Solver):
                                                            should_retry_solve)
             stp = PrefixSetup(self.prefix, unlink_precs, link_precs,
                               self.specs_to_remove, self.specs_to_add, self.neutered_specs)
-            return UnlinkLinkTransaction(stp)
+            return localUnlinkLinkTransaction(stp)
+
+
+class localUnlinkLinkTransaction(UnlinkLinkTransaction):
+
+    def print_transaction_summary(self, only_download=False):
+        legacy_action_groups = self._make_legacy_action_groups()
+        download_urls = set(axn.url for axn in self._pfe.cache_actions)
+        for actions, (prefix, stp) in zip(legacy_action_groups, self.prefix_setups.items()):
+            change_report = self._calculate_change_report(prefix, stp.unlink_precs, stp.link_precs,
+                                                          download_urls, stp.remove_specs,
+                                                          stp.update_specs)
+            change_report_str = self._change_report_str(change_report)
+            if not only_download:
+                print(ensure_text_type(change_report_str))
+            else:
+                total_size = human_bytes(
+                    sum(i.size for i in legacy_action_groups[0]["LINK"]))
+                report_download_str = [
+                    "\n## Package Plan ##\n  \n  download specs:"]
+                for s in sorted(str(i) for i in change_report.specs_to_add):
+                    report_download_str.append("    - %s" % s)
+                change_report_list = change_report_str.split("\n")
+                report_str_index = change_report_list.index(
+                    "The following NEW packages will be INSTALLED:")
+                report_download_str.append(
+                    "\nThe following packages will be downloaded (%s):\n" % total_size)
+                end = False
+                for line in change_report_list[report_str_index+1:]:
+                    if line.strip():
+                        report_download_str.append(line.strip("\n"))
+                        end = True
+                    else:
+                        if end:
+                            break
+                print("\n".join(report_download_str) + "\n\n")
+        return legacy_action_groups
 
 
 def check_prefix(prefix, json=False):

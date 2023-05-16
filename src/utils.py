@@ -8,6 +8,7 @@ import time
 import json
 import hashlib
 import requests
+import tempfile
 
 from tqdm import tqdm
 from lxml import etree
@@ -30,6 +31,7 @@ from conda.cli.conda_argparse import add_parser_prefix, ArgumentParser as CondaA
 from conda.common.io import Spinner
 from conda.common.url import path_to_url
 from conda.common.constants import NULL
+from conda.common.compat import ensure_text_type
 from conda.common.path import paths_equal, is_package_file
 
 from conda.core.solve import Solver
@@ -159,9 +161,9 @@ class Log(object):
         return getLogger('localconda')
 
 
-def cstring(string, mode=0, fore=37, back=40):
-    s = '\x1b[%s;%s;%sm%s\x1b[0m'
-    return s % (mode, fore, back, string)
+def cstring(string, mode=0, fore=37):
+    s = '\033[%sm\033[%sm%s\033[0m'
+    return s % (mode, fore, string)
 
 
 def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):

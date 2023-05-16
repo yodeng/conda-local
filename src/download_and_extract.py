@@ -88,7 +88,7 @@ class Download(object):
     def download_file(cls, url, outpath, con_tinue=False):
         chn = basename(dirname(dirname(url)))
         subdir = basename(dirname(url))
-        desc = '%-30.30s | ' % (chn + "(%s)" % subdir)
+        desc = '%-20.20s | ' % (chn + "(%s)" % subdir)
         offset = 0
         if con_tinue and isfile(outpath):
             offset = os.path.getsize(outpath)

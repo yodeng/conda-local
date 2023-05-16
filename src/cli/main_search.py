@@ -57,7 +57,7 @@ def execute(args):
     local_repo.parse_repos()
     channel_urls = LocalConda.file_channels(
         new_channel_names(_channel_urls, args), local_repo)
-    local_repo.log.info("Using local conda channel: %s", cstring(", ".join(
+    local_repo.log.info("Using conda channel: %s", cstring(", ".join(
         flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channel_urls])), 0, 34))
     with Spinner("Loading local channels", not context.verbosity and not context.quiet, context.json):
         matches = sorted(SubdirData.query_all(spec, channel_urls, subdirs),
