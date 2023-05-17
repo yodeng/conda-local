@@ -5,7 +5,7 @@
 ### Requirement
 
 + Linux-64
-+ Pyhon >= 2.7.10
++ Pyhon >= 2.7.10, <3.10
 
 ### Install
 
@@ -17,7 +17,7 @@ $ pip install git+https://github.com/yodeng/conda-local.git
 
 ### Usage
 
-Before using `conda-local`, command `conda local cache` should be done. This will cache and download all repodata to `LOCAL_CONDA_DIR` (default `$HOME/.conda`) from the default conda mirror [https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud](https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud) . And then all subcommands of `conda-local` will use this cache for action instead of remote channels. If not, `conda-local` still fetch remote matedata that is the same as conda.
+Before using `conda-local`, command `conda local cache` should be done. This will cache and download all repodata to `LOCAL_CONDA_DIR` (default `$HOME/.conda`) from the default conda mirror [https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud](https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud) and [https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs](https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs). And then all subcommands of `conda-local` will use this cache for action instead of remote channels. If not, `conda-local` still fetch remote matedata that is the same as conda.
 
 ```
 $ conda local cache
@@ -39,14 +39,13 @@ positional arguments:
     update       Update a list of packages into a specified conda environment from local conda repodata.
     remove       Remove a list of packages from a specified conda environment.
     search       Search for packages from local conda repo and display associated information.
-    download     download all packages include depency from local conda repodata.
+    download     Download all packages include depency from local conda repodata.
     cache        Cache local conda repodata.
     list         List all available (cached) local conda repodata.
 
 optional arguments:
   -h, --help     Show this help message and exit.
   -v, --version  show program's version number and exit
-
 ```
 
 ### Cache list

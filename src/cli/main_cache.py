@@ -28,8 +28,9 @@ def configure_parser(sub_parsers):
         "-m", '--mirror',
         metavar='url',
         nargs='+',
-        default=[DEFAULT_MIRROR, ],
-        help="conda mirror (Not channel) site, %s by default" % DEFAULT_MIRROR,
+        default=list(DEFAULT_MIRROR),
+        help="conda mirror (Not channel) site, '%s' and '%s' by default" % (
+            DEFAULT_MIRROR[0], DEFAULT_MIRROR[1]),
     )
     p.set_defaults(func='.cli.main_cache.execute')
 

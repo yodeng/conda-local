@@ -64,7 +64,10 @@ from ._version import __version__
 
 DEFAULT_THREADS = 10
 REPODATA_FN = "repodata.json"
-DEFAULT_MIRROR = "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud"
+DEFAULT_MIRROR = (
+    "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud",
+    "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs",
+)
 
 
 def _get_log():
@@ -167,7 +170,7 @@ def cstring(string, mode=0, fore=37):
     return s % (mode, fore, string)
 
 
-def get_repo_urls(mirrors=DEFAULT_MIRROR, repodata_fn=REPODATA_FN):
+def get_repo_urls(mirrors=DEFAULT_MIRROR[0], repodata_fn=REPODATA_FN):
     headers = default_headers
     repo_urls = nested_dict()
     res = requests.get(url=mirrors, headers=headers)
