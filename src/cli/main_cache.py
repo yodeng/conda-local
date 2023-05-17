@@ -40,15 +40,20 @@ def execute(args):
     repo_info = {}
     localrepo = LocalCondaRepo()
     localrepo.parse_repos()
-    for ms in mirrors:
+    for ms in mirrors[:]:
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,
                   n.hostname, n.path.strip("/"))
         if os.path.isfile(join(md, ".urls.json")):
-            common.confirm_yn("WARNING: a conda cached repodata already exists\n"
-                              "\nUpdate",
-                              default='no',
-                              dry_run=False)
+            try:
+                common.confirm_yn("WARNING: conda mirror '%s' already cached\n" % ms +
+                                  "\nUpdate",
+                                  default='no',
+                                  dry_run=False)
+            except CondaSystemExit:
+                mirrors.remove(ms)
+    if not mirrors:
+        return
     with Spinner("Find channels repodata from %s" % ", ".join(mirrors), fail_message="failed\n"):
         for ms in mirrors:
             urls = get_repo_urls(mirrors=ms)
@@ -56,8 +61,9 @@ def execute(args):
                 raise CondaError(
                     "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
             repo_info[ms] = urls
-    print("\nDownload repodata (%d threads)" % DEFAULT_THREADS)
     for ms, info in repo_info.items():
+        print("\nDownload repodata from mirror: %s (%d threads)" %
+              (ms, DEFAULT_THREADS))
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,
                   n.hostname, n.path.strip("/"))
