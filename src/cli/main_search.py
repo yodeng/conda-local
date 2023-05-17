@@ -78,14 +78,14 @@ def execute(args):
         for record in matches:
             pretty_record(record)
     else:
-        builder = ['# %-18s %15s %15s  %-20s' % (
+        builder = ['# %-18s %15s %30s  %-20s' % (
             "Name",
             "Version",
             "Build",
             "Channel",
         )]
         for record in matches:
-            builder.append('%-20s %15s %15s  %-20s' % (
+            builder.append('%-20s %15s %30s  %-20s' % (
                 record.name,
                 record.version,
                 record.build,

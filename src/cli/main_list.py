@@ -18,6 +18,12 @@ def configure_parser(sub_parsers):
         description=description,
         epilog=example,
     )
+    p.add_argument(
+        '-c', '--channel',
+        dest='channel',
+        action="append",
+        help="channel to search package",
+    )
     p.set_defaults(func='.cli.main_list.execute')
 
 
@@ -25,9 +31,18 @@ def execute(args):
     localrepo = LocalCondaRepo()
     localrepo.parse_repos()
     chn_info = nested_dict()
+    cached_chns = [basename(dirname(dirname(rf))) for rf in localrepo.repos]
+    if args.channel:
+        for c in args.channel:
+            if c in cached_chns:
+                break
+        else:
+            raise CondaError("No channel %s cached." % args.channel)
     with Spinner("Load cached conda repodata", fail_message="failed\n"):
         for repofile in localrepo.repos:
             chn = basename(dirname(dirname(repofile)))
+            if args.channel and chn not in args.channel:
+                continue
             url = localrepo.channels_url[chn]
             chn_info[chn]["url"] = cstring(url, 4, 34)
             try:
@@ -40,6 +55,7 @@ def execute(args):
                 continue
             subdir = repodata['info'].get(
                 'subdir', basename(dirname(repofile)))
+            chn_info[chn]["cached"][subdir] = repodata["packages"]
             chn_info[chn]["packages"][subdir] = len(repodata["packages"])
             chn_info[chn]["size"][subdir] = human_bytes(
                 sum([p["size"] for _, p in repodata["packages"].items()]))
@@ -55,15 +71,30 @@ def execute(args):
         if not len(chn_info):
             raise CondaError(
                 "No cached repodata found, you might need to run 'conda local cache'")
-    for cn, info in sorted(chn_info.items(), key=lambda x: sum(list(x[1]['packages'].values())), reverse=True):
-        print(cstring(cn + ":", 1, 34))
-        for k in ['cache time', 'url', 'packages', 'size']:
-            if k in ['cache time', "url"]:
-                v = "  - " + k + ": " + info[k]
-                print(v)
-            elif k in ['packages', 'size']:
-                print("  - " + k + ":")
-                for arch, value in info[k].items():
-                    v = "  " + "  - " + arch + ": " + str(value)
+    if not args.channel:
+        for cn, info in sorted(chn_info.items(), key=lambda x: sum(list(x[1]['packages'].values())), reverse=True):
+            print(cstring(cn + ":", 1, 34))
+            for k in ['cache time', 'url', 'packages', 'size']:
+                if k in ['cache time', "url"]:
+                    v = "  - " + k + ": " + info[k]
                     print(v)
-        print()
+                elif k in ['packages', 'size']:
+                    print("  - " + k + ":")
+                    for arch, value in info[k].items():
+                        v = "  " + "  - " + arch + ": " + str(value)
+                        print(v)
+            print()
+    else:
+        records = set()
+        for c in args.channel:
+            if c in chn_info:
+                for sub, info in chn_info[c]["cached"].items():
+                    for rec in info.values():
+                        records.add(
+                            (rec["name"], rec["version"], rec["build"], c))
+        records = sorted(records, key=lambda x: (
+            x[3], x[0], VersionOrder(x[1]), x[2]))
+        print('# %-18s %15s %30s  %-20s' %
+              ("Name", "Version", "Build", "Channel"))
+        for rec in records:
+            print('%-20s %15s %30s  %-20s' % (rec[0], rec[1], rec[2], rec[3]))
