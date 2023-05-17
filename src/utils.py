@@ -98,7 +98,8 @@ def add_version(p):
 
 def add_parse_no_default_channels(p):
     p.add_argument("--without-default-channels", action="store_true", default=False,
-                   help="Do not search default or .condarc channels. Requires -c / --channel."
+                   help="Do not search default or %s/.condarc channels. Requires -c / --channel." % os.getenv(
+                       "HOME", os.path.expanduser("~"))
                    )
 
 
