@@ -2,7 +2,6 @@
 # coding:utf-8
 
 from .utils import *
-from .download_and_extract import *
 
 
 class LocalCondaRepo(Log):

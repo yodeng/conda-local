@@ -2,7 +2,6 @@
 # coding:utf-8
 
 from ..src import *
-from ..download_and_extract import *
 
 
 def configure_parser(sub_parsers):
