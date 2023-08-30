@@ -348,6 +348,7 @@ def get_local_solver_class(key=None):
             from conda_libmamba_solver import get_solver_class
             solver = get_solver_class(key)
             solver.solve_for_transaction = _localSolver.solve_for_transaction
+            solver._print_info = lambda _: print()
             return solver
         except ImportError as exc:
             raise CondaImportError(
