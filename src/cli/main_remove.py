@@ -52,6 +52,7 @@ def configure_parser(sub_parsers):
         help="Package names to %s from the environment." % name,
     )
     add_parser_prefix(p)
+    add_parser_local_solver(p)
     p.set_defaults(func='.cli.main_remove.execute')
 
 
@@ -98,8 +99,8 @@ def execute(args):
         channels = LocalConda.file_channels(context.channels, local_repo)
         LOCAL_CONDA_LOG.info("Using conda channel: %s", cstring(", ".join(
             flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channels])), 0, 34))
-        solver = localSolver(prefix, channels,
-                             context.subdirs, specs_to_remove=specs)
+        solver = localSolver(key=args.solver)(prefix, channels,
+                                              context.subdirs, specs_to_remove=specs)
         txn = solver.solve_for_transaction()
         if txn.nothing_to_do:
             raise PackagesNotFoundError(args.package_names)

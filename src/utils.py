@@ -107,6 +107,24 @@ def add_parse_no_default_channels(p):
                    )
 
 
+def add_parser_local_solver(p):
+    """
+    Add a command-line flag for alternative solver backends.
+
+    See ``context.experimental_solver`` for more info.
+
+    TODO: This will be replaced by a proper plugin mechanism in the future.
+    """
+    p.add_argument(
+        "-s",
+        "--solver",
+        dest="solver",
+        choices=["classic", "libmamba", "libmamba-draft"],
+        help="Choose which solver backend to use.",
+        default=NULL,
+    )
+
+
 def new_channel_names(channels, args):
     chl_names = list(channels)
     if hasattr(args, "without_default_channels") and args.without_default_channels:

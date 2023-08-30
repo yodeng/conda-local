@@ -48,6 +48,7 @@ def configure_parser(sub_parsers):
         default=NULL,
         help="Do not ask for confirmation.",
     )
+    add_parser_local_solver(p)
     add_parse_no_default_channels(p)
     p.add_argument(
         'packages',

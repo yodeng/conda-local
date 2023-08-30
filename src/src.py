@@ -80,8 +80,8 @@ class LocalConda(Log):
         channels = self.file_channels(channel_names, self.local_repo)
         self.log.info("Using conda channel: %s", cstring(", ".join(
             flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channels])), 0, 34))
-        solver = localSolver(self.prefix, channels,
-                             context.subdirs, specs_to_add=self.specs)
+        solver = localSolver(key=self.args.solver)(self.prefix, channels,
+                                                   context.subdirs, specs_to_add=self.specs)
         return solver
 
     @staticmethod
@@ -247,7 +247,7 @@ def conda_exception_handler(func, *args, **kwargs):
     return return_value
 
 
-class localSolver(Solver):
+class _localSolver(Solver):
 
     def solve_for_transaction(self, update_modifier=NULL, deps_modifier=NULL, prune=NULL,
                               ignore_pinned=NULL, force_remove=NULL, force_reinstall=NULL,
@@ -330,3 +330,37 @@ def print_activate(env_name_or_prefix):
         #     $ conda deactivate
         """) % env_name_or_prefix
         print(message)
+
+
+def get_local_solver_class(key=None):
+    if not key:
+        if hasattr(context, "solver"):
+            key = isinstance(
+                context.solver, str) and context.solver or context.solver.value
+        elif hasattr(context, "experimental_solver"):
+            key = isinstance(context.experimental_solver,
+                             str) and context.experimental_solver or context.experimental_solver.value
+    key = (key or "classic").lower()
+    if key == "classic":
+        return _localSolver
+    if key.startswith("libmamba"):
+        try:
+            from conda_libmamba_solver import get_solver_class
+            solver = get_solver_class(key)
+            solver.solve_for_transaction = _localSolver.solve_for_transaction
+            return solver
+        except ImportError as exc:
+            raise CondaImportError(
+                f"You have chosen a non-default solver backend ({key}) "
+                f"but it could not be imported:\n\n"
+                f"  {exc.__class__.__name__}: {exc}\n\n"
+                f"Try (re)installing conda-libmamba-solver."
+            )
+    raise ValueError(
+        f"You have chosen a non-default solver backend ({key}) "
+        f"but it was not recognized. Choose one of "
+        f"{[v.value for v in ExperimentalSolverChoice]}"
+    )
+
+
+localSolver = get_local_solver_class
