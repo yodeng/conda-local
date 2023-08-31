@@ -159,7 +159,8 @@ class LocalConda(Log):
         if len(txn._pfe.cache_actions):
             n_multi = min(len(txn._pfe.cache_actions), DEFAULT_THREADS)
             print("\nDownload Packages")
-            with ThreadPoolExecutor(max_workers=n_multi) as p:
+            tqdm.set_lock(RLock())
+            with ThreadPoolExecutor(initializer=tqdm.set_lock, initargs=(tqdm.get_lock(),), max_workers=n_multi) as p:
                 for axn, exn in zip(txn._pfe.cache_actions, txn._pfe.extract_actions):
                     download = Download(axn, exn, self.lock)
                     p.submit(download.run)

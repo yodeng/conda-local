@@ -17,7 +17,7 @@ from textwrap import dedent
 from importlib import import_module
 from collections import defaultdict
 from logging import getLogger, Formatter
-from threading import Lock, currentThread
+from threading import Lock, currentThread, RLock
 from urllib.parse import urlsplit, urlunsplit
 from argparse import ArgumentParser, SUPPRESS
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
@@ -217,9 +217,6 @@ def get_repo_urls(mirrors=DEFAULT_MIRROR[0], repodata_fn=REPODATA_FN):
 class Download(object):
 
     bar_format = "{desc}{bar} | {percentage:3.0f}% "
-    cur = currentThread()
-    pos = None if cur.name == "MainThread" else int(
-        cur.name.rsplit("_", 1)[1])
 
     def __init__(self, axn, exn, lock):
         self.axn = axn
@@ -266,7 +263,10 @@ class Download(object):
                     os.remove(outpath)
                     offset = 0
             content_length = float(res.headers.get('Content-Length', 0))
-            with tqdm(desc=desc, position=self.pos, initial=offset, total=content_length, bar_format=self.bar_format, ascii=True, disable=context.quiet) as progress_bar:
+            cur = currentThread()
+            pos = None if cur.name == "MainThread" else int(
+                cur.name.rsplit("_", 1)[1])
+            with tqdm(lock_args=(False,), desc=desc, position=pos, initial=offset, total=content_length, bar_format=self.bar_format, ascii=True, disable=context.quiet) as progress_bar:
                 with open(outpath, "ab") as fo:
                     for chunk in res.iter_content(chunk_size=2 ** 14):
                         if chunk:
