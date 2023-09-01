@@ -31,6 +31,7 @@ from conda.cli.conda_argparse import add_parser_prefix, ArgumentParser as CondaA
 from conda.common.io import Spinner
 from conda.common.url import path_to_url
 from conda.common.constants import NULL
+from conda.common.serialize import json_load
 from conda.common.compat import ensure_text_type
 from conda.common.path import paths_equal, is_package_file
 
@@ -119,7 +120,7 @@ def add_parser_local_solver(p):
         "-s",
         "--solver",
         dest="solver",
-        choices=["classic", "libmamba", "libmamba-draft"],
+        choices=["classic", "libmamba"],
         help="Choose which solver backend to use.",
         default=NULL,
     )
@@ -383,3 +384,25 @@ def Decompress(exn):
     if lexists(exn.target_full_path):
         rm_rf(exn.target_full_path)
     extract_tarball(exn.source_full_path, exn.target_full_path)
+
+
+def get_solver_key(key=None):
+    if not key:
+        if hasattr(context, "solver"):
+            key = isinstance(
+                context.solver, str) and context.solver or context.solver.value
+        elif hasattr(context, "experimental_solver"):
+            key = isinstance(context.experimental_solver,
+                             str) and context.experimental_solver or context.experimental_solver.value
+    key = (key or "classic").lower()
+    if key.startswith("libmamba"):
+        try:
+            from conda_libmamba_solver import get_solver_class
+        except ImportError as exc:
+            raise CondaImportError(
+                f"You have chosen a non-default solver backend ({key}) "
+                f"but it could not be imported:\n\n"
+                f"  {exc.__class__.__name__}: {exc}\n\n"
+                f"Try (re)installing conda-libmamba-solver."
+            )
+    return key

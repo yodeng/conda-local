@@ -334,35 +334,15 @@ def print_activate(env_name_or_prefix):
 
 
 def get_local_solver_class(key=None):
-    if not key:
-        if hasattr(context, "solver"):
-            key = isinstance(
-                context.solver, str) and context.solver or context.solver.value
-        elif hasattr(context, "experimental_solver"):
-            key = isinstance(context.experimental_solver,
-                             str) and context.experimental_solver or context.experimental_solver.value
-    key = (key or "classic").lower()
+    key = get_solver_key(key=key)
     if key == "classic":
         return _localSolver
-    if key.startswith("libmamba"):
-        try:
-            from conda_libmamba_solver import get_solver_class
-            solver = get_solver_class(key)
-            solver.solve_for_transaction = _localSolver.solve_for_transaction
-            solver._print_info = lambda _: print()
-            return solver
-        except ImportError as exc:
-            raise CondaImportError(
-                f"You have chosen a non-default solver backend ({key}) "
-                f"but it could not be imported:\n\n"
-                f"  {exc.__class__.__name__}: {exc}\n\n"
-                f"Try (re)installing conda-libmamba-solver."
-            )
-    raise ValueError(
-        f"You have chosen a non-default solver backend ({key}) "
-        f"but it was not recognized. Choose one of "
-        f"{[v.value for v in ExperimentalSolverChoice]}"
-    )
+    elif key.startswith("libmamba"):
+        from conda_libmamba_solver import get_solver_class
+        solver = get_solver_class(key)
+        solver.solve_for_transaction = _localSolver.solve_for_transaction
+        solver._print_info = lambda _: print()
+        return solver
 
 
 localSolver = get_local_solver_class
