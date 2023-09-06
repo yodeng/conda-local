@@ -307,7 +307,10 @@ class Download(object):
                     os.remove(outpath)
                     offset = 0
             content_length = float(res.headers.get('Content-Length', 0))
-            with tqdm(desc=desc, position=cls.pos, initial=offset, total=content_length, bar_format=cls.bar_format, ascii=True, disable=context.quiet) as progress_bar:
+            cur = currentThread()
+            pos = None if cur.name == "MainThread" else int(
+                cur.name.rsplit("_", 1)[1])
+            with tqdm(desc=desc, position=pos, initial=offset, total=content_length, bar_format=cls.bar_format, ascii=True, disable=context.quiet) as progress_bar:
                 with open(outpath, "ab") as fo:
                     for chunk in res.iter_content(chunk_size=2 ** 14):
                         if chunk:
