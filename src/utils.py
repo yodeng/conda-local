@@ -9,6 +9,7 @@ import json
 import hashlib
 import requests
 import tempfile
+import subprocess
 
 from tqdm import tqdm
 from lxml import etree
@@ -43,7 +44,7 @@ from conda.core.index import calculate_channel_urls
 from conda.core.link import PrefixSetup, UnlinkLinkTransaction
 from conda.core.package_cache_data import PackageCacheData
 
-from conda.base.context import context, determine_target_prefix
+from conda.base.context import context, determine_target_prefix, get_prefix
 from conda.base.constants import UpdateModifier, ROOT_ENV_NAME
 
 from conda._vendor.toolz import concat
@@ -57,10 +58,16 @@ from conda.models.match_spec import MatchSpec
 from conda.models.version import VersionOrder
 from conda.models.channel import Channel, all_channel_urls
 
-from conda.auxlib.ish import dals
+try:
+    from conda.auxlib.ish import dals
+except ImportError:
+    from conda._vendor.auxlib.ish import dals
+
 from conda.utils import human_bytes
 from conda.misc import explicit, touch_nonadmin
 from conda.exceptions import *
+
+from conda_env.specs import detect
 
 from ._version import __version__
 
@@ -108,6 +115,16 @@ def add_parse_no_default_channels(p):
                    )
 
 
+def add_parser_spec(p):
+    p.add_argument(
+        'packages',
+        metavar='package_spec/yaml',
+        action="store",
+        nargs='*',
+        help="Packages or Environment definition yaml file to install or update in the conda environment.",
+    )
+
+
 def add_parser_local_solver(p):
     """
     Add a command-line flag for alternative solver backends.
@@ -153,7 +170,7 @@ def fast_url(urls):
 
 def get_md5(filename):
     hm = hashlib.md5()
-    if not os.path.isfile(filename):
+    if not isfile(filename):
         return ""
     with open(filename, "rb") as fi:
         while True:

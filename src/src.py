@@ -60,9 +60,14 @@ class LocalConda(Log):
         self.solver = None
         self.specs = []
         self.lock = Lock()
+        self.pip_pkgs = []
 
     def _get_spec(self):
-        args_packages = [s.strip('"\'') for s in self.args.packages]
+        if self.args.packages and len(self.args.packages) == 1 and isfile(self.args.packages[0]):
+            self.args.file = self.args.packages[0]
+            args_packages = self._get_spec_from_yaml(self.args.file)
+        else:
+            args_packages = [s.strip('"\'') for s in self.args.packages]
         num_cp = sum(is_package_file(s) for s in args_packages)
         if num_cp:
             if num_cp == len(args_packages):
@@ -73,6 +78,15 @@ class LocalConda(Log):
                                       " filenames")
         self.specs.extend(common.specs_from_args(
             args_packages, json=context.json))
+
+    def _get_spec_from_yaml(self, yamlfile):
+        spec = detect(filename=self.args.file, directory=os.getcwd())
+        env = spec.environment
+        if self.args.prefix is None and self.args.name is None:
+            self.args.name = env.name
+        self.prefix = get_prefix(context, self.args, search=False)
+        self.pip_pkgs.extend(env.dependencies.get("pip", []))
+        return env.dependencies["conda"]
 
     def _get_solve(self):
         self.local_repo.parse_repos()
@@ -111,7 +125,7 @@ class LocalConda(Log):
                                 self.prefix)
             else:
                 raise EnvironmentLocationNotFound(self.prefix)
-        self._get_spec()
+            self._get_spec()
         self.solver = self._get_solve()
         update_modifier = UpdateModifier.FREEZE_INSTALLED
         if cmd == "update":
@@ -154,6 +168,7 @@ class LocalConda(Log):
             return
         self.multi_download_extract(unlink_link_transaction)
         unlink_link_transaction.execute()
+        self.install_pip()
 
     def multi_download_extract(self, txn):
         if len(txn._pfe.cache_actions):
@@ -179,7 +194,18 @@ class LocalConda(Log):
                 c.base_url, self.local_repo.channels_url[c.name])
         return axn.url
 
+    def install_pip(self):
+        if self.pip_pkgs:
+            with Spinner("\nInstalling pip dependencies:", fail_message="failed\n"):
+                py_path = join(self.prefix, 'bin', 'python')
+                cmd = [py_path, "-m", "pip", 'install', "-U"] + self.pip_pkgs
+                try:
+                    subprocess.check_call(cmd)
+                except:
+                    raise CondaValueError("pip returned an error.")
+
     def create(self):
+        self._get_spec()
         if is_conda_environment(self.prefix):
             if paths_equal(self.prefix, context.root_prefix):
                 raise CondaValueError(

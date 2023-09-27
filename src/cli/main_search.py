@@ -53,7 +53,8 @@ def _process_query_result(result_str, records=True):
     if result.get("result", {}).get("status") != "OK":
         query_type = result.get("query", {}).get("type", "<Unknown>")
         query = result.get("query", {}).get("query", "<Unknown>")
-        error_msg = result.get("result", {}).get("msg", f"Faulty response: {result_str}")
+        error_msg = result.get("result", {}).get(
+            "msg", f"Faulty response: {result_str}")
         raise ValueError(f"{query_type} query '{query}' failed: {error_msg}")
     if records:
         pkg_records = []
