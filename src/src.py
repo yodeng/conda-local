@@ -236,6 +236,7 @@ class LocalConda(Log):
         self.args.force_reinstall = True
         self.download_dir = abspath(self.args.outdir)
         context.download_only = True
+        self._get_spec()
         self.install("create")
 
     def update(self):
