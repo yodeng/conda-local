@@ -195,7 +195,7 @@ class LocalConda(Log):
         return axn.url
 
     def install_pip(self):
-        if self.pip_pkgs:
+        if self.pip_pkgs and not self.args.ignore_pip:
             with Spinner("\nInstalling pip dependencies:", fail_message="failed\n"):
                 py_path = join(self.prefix, 'bin', 'python')
                 cmd = [py_path, "-m", "pip", 'install', "-U"] + self.pip_pkgs

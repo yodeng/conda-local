@@ -165,7 +165,7 @@ def fast_url(urls):
         if res.status_code != 404:
             delt = time.time() - start
         time_record.append((url, delt))
-    return [i[0] for i in sorted(time_record, key=lambda x:float(x[1]))]
+    return [i[0] for i in sorted(time_record, key=lambda x: float(x[1]))]
 
 
 def get_md5(filename):

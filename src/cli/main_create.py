@@ -41,6 +41,12 @@ def configure_parser(sub_parsers):
         action='store_true',
         default=False,
     )
+    p.add_argument(
+        '--ignore-pip',
+        help="Do not install pip package.",
+        action='store_true',
+        default=False,
+    )
     add_parser_local_solver(p)
     add_parse_no_default_channels(p)
     add_parser_spec(p)
