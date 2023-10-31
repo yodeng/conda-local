@@ -75,7 +75,7 @@ def _search(spec, channels, subdirs, key=None):
         return sorted(SubdirData.query_all(spec, channels, subdirs),
                       key=lambda rec: (rec.name, VersionOrder(rec.version), rec.build))
     index = LibMambaIndexHelper([], channels, subdirs)
-    query = spec.get_raw_value("name")
+    query = spec.original_spec_str
     return _process_query_result(index.search(query))
 
 
