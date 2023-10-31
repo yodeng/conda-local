@@ -5,24 +5,31 @@
 from ..src import *
 
 
-def configure_parser(sub_parsers):
-    description = "List all available (cached) local conda repodata."
+def configure_parser(sub_parsers, name="list"):
+    help_desc = "List all available (cached) local conda repodata."
+    if name != "list":
+        help_desc = "Alias for list"
     example = dedent("""
         Examples:
         
-            conda local list
-        """)
+            conda local {}
+        """.format(name))
     p = sub_parsers.add_parser(
-        'list',
-        help=description,
-        description=description,
+        name,
+        help=help_desc,
         epilog=example,
     )
     p.add_argument(
         '-c', '--channel',
         dest='channel',
         action="append",
-        help="channel to search package",
+        help="show all packages of this cached channel",
+    )
+    p.add_argument(
+        '--only-channel-name',
+        action="store_true",
+        default=False,
+        help="only show cached channel names",
     )
     p.set_defaults(func='.cli.main_list.execute')
 
@@ -30,6 +37,11 @@ def configure_parser(sub_parsers):
 def execute(args):
     localrepo = LocalCondaRepo()
     localrepo.parse_repos()
+    if args.only_channel_name:
+        print("all local cached channels:")
+        for cn in sorted(localrepo.channels.keys()):
+            print("  - {}".format(cn))
+        sys.exit()
     chn_info = nested_dict()
     cached_chns = [basename(dirname(dirname(rf))) for rf in localrepo.repos]
     if args.channel:

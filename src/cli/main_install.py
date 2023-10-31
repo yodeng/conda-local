@@ -5,7 +5,7 @@ from ..src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Installs a list of packages into a specified conda environment from local conda repodata."
+    help_desc = "Installs a list of packages into a specified conda environment from local conda repodata."
     example = dedent("""
         Examples:
         
@@ -13,8 +13,7 @@ def configure_parser(sub_parsers):
         """)
     p = sub_parsers.add_parser(
         'install',
-        description=description,
-        help=description,
+        help=help_desc,
         epilog=example,
     )
     p.add_argument(

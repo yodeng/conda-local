@@ -5,7 +5,7 @@ from ..src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Download all packages include depency from local conda repodata."
+    help_desc = "Download all packages include depency from local conda repodata."
     example = dedent("""
         Examples:
         
@@ -13,8 +13,7 @@ def configure_parser(sub_parsers):
         """)
     p = sub_parsers.add_parser(
         'download',
-        description=description,
-        help=description,
+        help=help_desc,
         epilog=example,
     )
     p.add_argument(

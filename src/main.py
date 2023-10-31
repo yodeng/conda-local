@@ -19,6 +19,7 @@ def create_parser():
     main_download.configure_parser(sub_parsers)
     main_cache.configure_parser(sub_parsers)
     main_list.configure_parser(sub_parsers)
+    main_list.configure_parser(sub_parsers, name="ls")
     show_help_on_empty_command()
     add_version(p)
     return p

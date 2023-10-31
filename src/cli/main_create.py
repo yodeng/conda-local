@@ -5,7 +5,7 @@ from ..src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Create a new conda environment from a list of specified packages."
+    help_desc = "Create a new conda environment from a list of specified packages."
     example = dedent("""
         Examples:
         
@@ -13,8 +13,7 @@ def configure_parser(sub_parsers):
         """)
     p = sub_parsers.add_parser(
         'create',
-        description=description,
-        help=description,
+        help=help_desc,
         epilog=example,
     )
     p.add_argument(

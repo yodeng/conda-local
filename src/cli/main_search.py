@@ -5,7 +5,7 @@ from ..src import *
 
 
 def configure_parser(sub_parsers):
-    description = "Search for packages from local conda repo and display associated information."
+    help_desc = "Search for packages from local conda repo and display associated information."
     example = dedent("""
         Examples:
             
@@ -20,8 +20,7 @@ def configure_parser(sub_parsers):
         """)
     p = sub_parsers.add_parser(
         'search',
-        description=description,
-        help=description,
+        help=help_desc,
         epilog=example
     )
     p.add_argument(
