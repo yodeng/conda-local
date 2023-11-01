@@ -34,6 +34,8 @@ def do_call(args):
 def main():
     parser = create_parser()
     args = parser.parse_args()
+    if getattr(args, "debug", None):
+        LOCAL_CONDA_LOG.setLevel(10)
     os.environ["CONDA_AUTO_UPDATE_CONDA"] = "false"
     context.__init__(argparse_args=args)
     init_loggers(context)

@@ -81,8 +81,8 @@ DEFAULT_MIRROR = (
 
 def _get_log():
     logger = getLogger("localconda")
+    logger.setLevel(20)
     handler = StdStreamHandler("stdout")
-    handler.setLevel(20)
     handler.setFormatter(Formatter('[%(levelname)s %(asctime)s] %(message)s'))
     logger.addHandler(handler)
     return logger
@@ -105,6 +105,12 @@ def flatten(x):
 def add_version(p):
     p.add_argument("-v", '--version',
                    action='version', version="v" + __version__
+                   )
+
+
+def add_logging_debug(p):
+    p.add_argument('--debug',
+                   action='store_true', default=False, help="logging debug"
                    )
 
 
@@ -207,28 +213,32 @@ def cstring(string, mode=0, fore=37):
     return s % (mode, fore, string)
 
 
-def get_repo_urls(mirrors=DEFAULT_MIRROR[0], repodata_fn=REPODATA_FN):
+def get_repo_urls(mirrors=DEFAULT_MIRROR[0], repodata_fn=REPODATA_FN, channels=None):
     headers = default_headers
     repo_urls = nested_dict()
-    res = requests.get(url=mirrors, headers=headers)
-    mirrors = res.url
-    h = etree.HTML(res.content)
-    chn = [i.strip("/") for i in h.xpath("//a/@href")
-           if re.match("^\w", i) and i.endswith("/")]
+    if not channels:
+        res = requests.get(url=mirrors, headers=headers)
+        mirrors = res.url
+        h = etree.HTML(res.content)
+        chn = [i.strip("/") for i in h.xpath("//a/@href")
+               if re.match("^\w", i) and i.endswith("/")]
+    else:
+        chn = channels
     for c in sorted(chn):
         for a in context.subdirs:
             url = join(mirrors, c, a, repodata_fn)
             r = requests.head(url, headers=headers)
             if r.status_code != 200:
                 continue
+            content_length = 0
             try:
                 content_length = int(r.headers.get("Content-Length", 0))
-            except:
+            except Exception as e:
+                LOCAL_CONDA_LOG.info(e)
                 continue
             else:
-                if content_length > 0:
-                    repo_urls[c][a]["url"] = url
-                    repo_urls[c][a]["size"] = content_length
+                repo_urls[c][a]["url"] = url
+                repo_urls[c][a]["size"] = content_length
     return repo_urls
 
 
@@ -275,6 +285,7 @@ class Download(object):
         if len(size_str) > 0:
             desc += "%-9s | " % size_str
         md5 = hashlib.md5()
+        LOCAL_CONDA_LOG.debug("download from %s to %s", url, outpath)
         with requests.get(url, headers=headers, stream=True) as res:
             if res.headers.get("Accept-Ranges", "") != "bytes":
                 if isfile(outpath):
@@ -318,6 +329,7 @@ class Download(object):
             offset = os.path.getsize(outpath)
         headers = default_headers.copy()
         headers["Range"] = "bytes={}-".format(offset)
+        LOCAL_CONDA_LOG.debug("download from %s to %s", url, outpath)
         with requests.get(url, headers=headers, stream=True) as res:
             if res.headers.get("Accept-Ranges", "") != "bytes":
                 if isfile(outpath):

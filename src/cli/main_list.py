@@ -31,6 +31,7 @@ def configure_parser(sub_parsers, name="list"):
         default=False,
         help="only show cached channel names",
     )
+    add_logging_debug(p)
     p.set_defaults(func='.cli.main_list.execute')
 
 

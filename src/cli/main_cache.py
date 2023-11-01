@@ -22,7 +22,8 @@ def configure_parser(sub_parsers):
         default=NULL,
         help="Do not display progress bar.",
     )
-    p.add_argument(
+    ex = p.add_mutually_exclusive_group(required=False)
+    ex.add_argument(
         "-m", '--mirror',
         metavar='url',
         nargs='+',
@@ -30,6 +31,13 @@ def configure_parser(sub_parsers):
         help="conda mirror (Not channel) site, '%s' and '%s' by default" % (
             DEFAULT_MIRROR[0], DEFAULT_MIRROR[1]),
     )
+    ex.add_argument(
+        '-c', '--channel',
+        dest='channel',
+        action="append",
+        help="channel to cache",
+    )
+    add_logging_debug(p)
     p.set_defaults(func='.cli.main_cache.execute')
 
 
@@ -38,11 +46,23 @@ def execute(args):
     repo_info = {}
     localrepo = LocalCondaRepo()
     localrepo.parse_repos()
+    channel_names = new_channel_names(context.channels, args)
+    channels = []
+    for c in LocalConda.file_channels(channel_names, localrepo).item_list:
+        if args.channel and c.name in args.channel:
+            channels.append(c)
+    if channels:
+        mirrors = []
+        urls = all_channel_urls(
+            [c.name for c in channels], [context.subdirs[0]])
+        for url in urls:
+            ms = dirname(dirname(url))
+            mirrors.append(ms)
     for ms in mirrors[:]:
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,
-                  n.hostname, n.path.strip("/"))
-        if os.path.isfile(join(md, ".urls.json")):
+                  n.hostname or "", n.path)
+        if os.path.isfile(join(md, ".urls.json")) and not args.channel:
             try:
                 common.confirm_yn("WARNING: conda mirror '%s' already cached\n" % ms +
                                   "\nUpdate",
@@ -50,11 +70,25 @@ def execute(args):
                                   dry_run=False)
             except CondaSystemExit:
                 mirrors.remove(ms)
+        elif os.path.isfile(join(md, ".urls.json")) and args.channel:
+            with open(join(md, ".urls.json")) as fi:
+                url_data = json.load(fi)
+            for c in args.channel:
+                if c in url_data["channels"]:
+                    try:
+                        common.confirm_yn("WARNING: conda channel '%s' already cached\n" % c +
+                                          "\nUpdate",
+                                          default='no',
+                                          dry_run=False)
+
+                    except CondaSystemExit:
+                        mirrors.remove(ms)
     if not mirrors:
         return
     with Spinner("Find channels repodata from %s" % ", ".join(mirrors), fail_message="failed\n"):
         for ms in mirrors:
-            urls = get_repo_urls(mirrors=ms)
+            urls = get_repo_urls(mirrors=ms, channels=[
+                                 c.name for c in channels])
             if not len(urls):
                 raise CondaError(
                     "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
