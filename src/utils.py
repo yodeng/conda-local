@@ -321,7 +321,10 @@ class Download(object):
 
     @classmethod
     def download_file(cls, url, outpath, con_tinue=False):
-        chn = basename(dirname(dirname(url)))
+        if url.endswith("json"):
+            chn = basename(dirname(dirname(url)))
+        else:
+            chn = basename(url)
         subdir = basename(dirname(url))
         desc = '%-20.20s | ' % (chn + "(%s)" % subdir)
         offset = 0
