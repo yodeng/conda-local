@@ -64,11 +64,18 @@ class LocalConda(Log):
         self.channels = list(context.channels)
 
     def _get_spec(self):
-        if self.args.packages and len(self.args.packages) == 1 and isfile(self.args.packages[0]):
-            self.args.file = self.args.packages[0]
-            args_packages = self._get_spec_from_yaml(self.args.file)
-        else:
-            args_packages = [s.strip('"\'') for s in self.args.packages]
+        args_packages = []
+        yaml_file = []
+        for spec in self.args.packages:
+            if isfile(spec):
+                yaml_file.append(spec)
+            else:
+                args_packages.append(spec.strip('"\''))
+        if len(yaml_file) > 2:
+            raise CondaValueError("no more then one yaml file allowed")
+        for f in yaml_file:
+            self.args.file = f
+            args_packages.extend(self._get_spec_from_yaml(f))
         num_cp = sum(is_package_file(s) for s in args_packages)
         if num_cp:
             if num_cp == len(args_packages):
