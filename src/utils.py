@@ -127,7 +127,7 @@ def add_parser_spec(p):
         metavar='package_spec/yaml',
         action="store",
         nargs='*',
-        help="Packages or Environment definition yaml file to install or update in the conda environment.",
+        help="Packages or yaml file defined packages.",
     )
 
 

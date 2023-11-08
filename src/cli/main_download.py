@@ -43,17 +43,12 @@ def configure_parser(sub_parsers):
     add_parser_local_solver(p)
     add_parse_no_default_channels(p)
     p.add_argument(
-        'packages',
-        metavar='package_spec',
-        action="store",
-        nargs='*',
-        help="Packages to install in the conda environment.",
-    )
-    p.add_argument(
         '-o', '--outdir',
         required=True,
+        metavar="<dir>",
         help="directory to save all packages, required",
     )
+    add_parser_spec(p)
     p.set_defaults(func='.cli.main_download.execute')
 
 

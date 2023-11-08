@@ -61,6 +61,7 @@ class LocalConda(Log):
         self.specs = []
         self.lock = Lock()
         self.pip_pkgs = []
+        self.channels = list(context.channels)
 
     def _get_spec(self):
         if self.args.packages and len(self.args.packages) == 1 and isfile(self.args.packages[0]):
@@ -82,15 +83,13 @@ class LocalConda(Log):
     def _get_spec_from_yaml(self, yamlfile):
         spec = detect(filename=self.args.file, directory=os.getcwd())
         env = spec.environment
-        if self.args.prefix is None and self.args.name is None:
-            self.args.name = env.name
-        self.prefix = get_prefix(context, self.args, search=False)
+        self.channels = env.channels + self.channels
         self.pip_pkgs.extend(env.dependencies.get("pip", []))
         return env.dependencies["conda"]
 
     def _get_solve(self):
         self.local_repo.parse_repos()
-        channel_names = new_channel_names(context.channels, self.args)
+        channel_names = new_channel_names(self.channels, self.args)
         channels = self.file_channels(channel_names, self.local_repo)
         self.log.info("Using conda channel: %s", cstring(", ".join(
             flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channels])), 0, 34))
