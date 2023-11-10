@@ -74,7 +74,7 @@ def execute(args):
     for ms in mirrors[:]:
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,
-                  n.hostname or "", n.path)
+                  n.hostname or "", n.path.strip("/"))
         if os.path.isfile(join(md, ".urls.json")) and not args.channel:
             try:
                 common.confirm_yn("WARNING: conda mirror '%s' already cached\n" % ms +
