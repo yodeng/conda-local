@@ -93,23 +93,24 @@ def execute(args):
                 channels.extend(chs)
     url_cached = {}
     if channels:
-        with Spinner("\nDownload channels repodata, (%d threads)" % min(DEFAULT_THREADS, len(channels)), fail_message="failed\n"):
-            download_args = []
-            for c in channels:
-                for u in c.urls():
-                    u = join(u, REPODATA_FN)
-                    subdir = basename(dirname(u))
-                    outfile = join(LocalCondaRepo.defaut_repo_dir,
-                                   c.channel_location, c.name, subdir, REPODATA_FN)
-                    mkdir(dirname(outfile))
-                    download_args.append((u, outfile))
-                url_file = join(LocalCondaRepo.defaut_repo_dir,
-                                c.channel_location, ".urls.json")
-                url_cached.setdefault(url_file, {})[c.name] = dirname(c.url())
-            if download_args:
-                with ThreadPoolExecutor(DEFAULT_THREADS) as p:
-                    for url, outfile in download_args:
-                        p.submit(Download.download_file, url, outfile)
+        download_args = []
+        for c in channels:
+            for u in c.urls():
+                u = join(u, REPODATA_FN)
+                subdir = basename(dirname(u))
+                outfile = join(LocalCondaRepo.defaut_repo_dir,
+                               c.channel_location, c.name, subdir, REPODATA_FN)
+                mkdir(dirname(outfile))
+                download_args.append((u, outfile))
+            url_file = join(LocalCondaRepo.defaut_repo_dir,
+                            c.channel_location, ".urls.json")
+            url_cached.setdefault(url_file, {})[c.name] = dirname(c.url())
+        if download_args:
+            print("\nDownload channels repodata, (%d threads)" %
+                  min(DEFAULT_THREADS, len(channels)))
+            with ThreadPoolExecutor(DEFAULT_THREADS) as p:
+                for url, outfile in download_args:
+                    p.submit(Download.download_file, url, outfile)
     if url_cached:
         for f, info in url_cached.items():
             if isfile(f):
