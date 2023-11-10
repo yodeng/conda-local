@@ -213,35 +213,6 @@ def cstring(string, mode=0, fore=37):
     return s % (mode, fore, string)
 
 
-def get_repo_urls(mirrors=DEFAULT_MIRROR[0], repodata_fn=REPODATA_FN, channels=None):
-    headers = default_headers
-    repo_urls = nested_dict()
-    if not channels:
-        res = requests.get(url=mirrors, headers=headers)
-        mirrors = res.url
-        h = etree.HTML(res.content)
-        chn = [i.strip("/") for i in h.xpath("//a/@href")
-               if re.match("^\w", i) and i.endswith("/")]
-    else:
-        chn = channels
-    for c in sorted(chn):
-        for a in context.subdirs:
-            url = join(mirrors, c, a, repodata_fn)
-            r = requests.head(url, headers=headers)
-            if r.status_code != 200:
-                continue
-            content_length = 0
-            try:
-                content_length = int(r.headers.get("Content-Length", 0))
-            except Exception as e:
-                LOCAL_CONDA_LOG.info(e)
-                continue
-            else:
-                repo_urls[c][a]["url"] = url
-                repo_urls[c][a]["size"] = content_length
-    return repo_urls
-
-
 class Download(object):
 
     bar_format = "{desc}{bar} | {percentage:3.0f}% "
@@ -441,3 +412,11 @@ def get_solver_key(key=None):
                 f"Try (re)installing conda-libmamba-solver."
             )
     return key
+
+
+def is_repo_url(url):
+    headers = default_headers
+    res = requests.get(url=url, headers=headers)
+    if res.status_code >= 400:
+        return (False, res.status_code)
+    return (True, res.status_code)

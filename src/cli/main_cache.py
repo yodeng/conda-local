@@ -46,18 +46,31 @@ def execute(args):
     repo_info = {}
     localrepo = LocalCondaRepo()
     localrepo.parse_repos()
-    channel_names = new_channel_names(context.channels, args)
     channels = []
-    for c in LocalConda.file_channels(channel_names, localrepo).item_list:
-        if args.channel and c.name in args.channel:
-            channels.append(c)
-    if channels:
+    if args.channel:
         mirrors = []
-        urls = all_channel_urls(
-            [c.name for c in channels], [context.subdirs[0]])
-        for url in urls:
-            ms = dirname(dirname(url))
-            mirrors.append(ms)
+        for chn in args.channel:
+            if "://" in chn:
+                c = LocalChannels.from_url(chn).to_channel(local=False)
+            elif chn in localrepo.channels:
+                url = localrepo.channels_url[chn]
+                c = LocalChannels.from_url(
+                    url).to_channel(local=False, name=chn)
+            else:
+                c = LocalChannels.from_name(chn).to_channel(local=False)
+            if c.name in localrepo.channels:
+                try:
+                    common.confirm_yn("WARNING: conda channel '%s' already cached\n" % c +
+                                      "\nUpdate",
+                                      default='no',
+                                      dry_run=False)
+
+                except CondaSystemExit:
+                    continue
+            status, ret_code = is_repo_url(c.url())
+            if not status:
+                raise UnavailableInvalidChannel(c.url(), ret_code)
+            channels.append(c)
     for ms in mirrors[:]:
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,
@@ -70,56 +83,41 @@ def execute(args):
                                   dry_run=False)
             except CondaSystemExit:
                 mirrors.remove(ms)
-        elif os.path.isfile(join(md, ".urls.json")) and args.channel:
-            with open(join(md, ".urls.json")) as fi:
-                url_data = json.load(fi)
-            for c in args.channel:
-                if c in url_data["channels"]:
-                    try:
-                        common.confirm_yn("WARNING: conda channel '%s' already cached\n" % c +
-                                          "\nUpdate",
-                                          default='no',
-                                          dry_run=False)
-
-                    except CondaSystemExit:
-                        mirrors.remove(ms)
-    if not mirrors:
-        return
-    with Spinner("Find channels repodata from %s" % ", ".join(mirrors), fail_message="failed\n"):
-        for ms in mirrors:
-            urls = get_repo_urls(mirrors=ms, channels=[
-                                 c.name for c in channels])
-            if not len(urls):
-                raise CondaError(
-                    "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
-            repo_info[ms] = urls
-    for ms, info in repo_info.items():
-        print("\nDownload repodata from mirror: %s (%d threads)" %
-              (ms, DEFAULT_THREADS))
-        n = urlsplit(ms)
-        md = join(LocalCondaRepo.defaut_repo_dir,
-                  n.hostname, n.path.strip("/"))
-        url_data = {"channels": {}}
-        if os.path.isfile(join(md, ".urls.json")):
-            try:
-                with open(join(md, ".urls.json")) as fi:
-                    url_data = json.load(fi)
-            except:
-                pass
-        download_args = []
-        for c, arc in info.items():
-            for a, repo in arc.items():
-                url = repo["url"]
-                outdir = join(md, c, a)
-                outfile = join(outdir, os.path.basename(url))
-                mkdir(outdir)
-                chn = Channel.from_url(url)
-                url_data["channels"][c] = chn.base_url
-                download_args.append((url, outfile))
-        with ThreadPoolExecutor(DEFAULT_THREADS) as p:
-            for url, outfile in download_args:
-                p.submit(Download.download_file, url, outfile)
-        url_data["time_stmp"] = int(time.time())
-        with open(join(md, ".urls.json"), "w") as fo:
-            json.dump(url_data, fo, indent=2)
-    LOCAL_CONDA_LOG.info("Cache repodata done.")
+    if mirrors:
+        with Spinner("Find channels from %s" % ", ".join(mirrors), fail_message="failed\n"):
+            for ms in mirrors:
+                chs = get_repo_channels(ms)
+                if not len(chs):
+                    raise CondaError(
+                        "%s is not a correct conda mirror url or there is no channels in this mirror." % ms)
+                channels.extend(chs)
+    url_cached = {}
+    if channels:
+        with Spinner("\nDownload channels repodata, (%d threads)" % min(DEFAULT_THREADS, len(channels)), fail_message="failed\n"):
+            download_args = []
+            for c in channels:
+                for u in c.urls():
+                    u = join(u, REPODATA_FN)
+                    subdir = basename(dirname(u))
+                    outfile = join(LocalCondaRepo.defaut_repo_dir,
+                                   c.channel_location, c.name, subdir, REPODATA_FN)
+                    mkdir(dirname(outfile))
+                    download_args.append((u, outfile))
+                url_file = join(LocalCondaRepo.defaut_repo_dir,
+                                c.channel_location, ".urls.json")
+                url_cached.setdefault(url_file, {})[c.name] = dirname(c.url())
+            if download_args:
+                with ThreadPoolExecutor(DEFAULT_THREADS) as p:
+                    for url, outfile in download_args:
+                        p.submit(Download.download_file, url, outfile)
+    if url_cached:
+        for f, info in url_cached.items():
+            if isfile(f):
+                with open(f) as fi:
+                    cache = json.load(fi)
+                    info.update(cache["channels"])
+            mkdir(dirname(f))
+            with open(f, "w") as fo:
+                data = {"channels": info, "time_stmp": int(time.time())}
+                json.dump(data, fo, indent=2)
+        LOCAL_CONDA_LOG.info("Cache repodata done.")

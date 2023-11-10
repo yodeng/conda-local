@@ -44,34 +44,42 @@ def execute(args):
             print("  - {}".format(cn))
         sys.exit()
     chn_info = nested_dict()
-    cached_chns = [basename(dirname(dirname(rf))) for rf in localrepo.repos]
+    channels = {}
     if args.channel:
-        for c in args.channel:
-            if c in cached_chns:
-                break
-        else:
-            raise CondaError("No channel %s cached." % args.channel)
+        for chn in args.channel:
+            if chn in localrepo.channels:
+                channels[chn] = localrepo.channels[chn]
+            elif "://" in chn:
+                c = LocalChannels.from_url(chn)
+                if c.name in localrepo.channels:
+                    channels[c.name] = localrepo.channels[c.name]
+            else:
+                raise CondaError("No channel %s cached." % args.channel)
     with Spinner("Load cached conda repodata", fail_message="failed\n"):
-        for repofile in localrepo.repos:
-            chn = basename(dirname(dirname(repofile)))
-            if args.channel and chn not in args.channel:
+        for chn, channel in localrepo.channels.items():
+            if channels and chn not in channels:
                 continue
             url = localrepo.channels_url[chn]
             chn_info[chn]["url"] = cstring(url, 4, 34)
-            try:
-                with open(repofile) as fi:
-                    repodata = json.load(fi)
-            except:
-                LOCAL_CONDA_LOG.warn(
-                    "Load channel '%s' error, removed this channel.", chn)
-                os.remove(repofile)
-                continue
-            subdir = repodata['info'].get(
-                'subdir', basename(dirname(repofile)))
-            chn_info[chn]["cached"][subdir] = repodata["packages"]
-            chn_info[chn]["packages"][subdir] = len(repodata["packages"])
-            chn_info[chn]["size"][subdir] = human_bytes(
-                sum([p["size"] for _, p in repodata["packages"].items()]))
+            for subdir in context.subdirs:
+                repofile = join(channel.location, channel.name,
+                                subdir, REPODATA_FN)
+                if isfile(repofile):
+                    try:
+                        with open(repofile) as fi:
+                            repodata = json.load(fi)
+                    except:
+                        # LOCAL_CONDA_LOG.warn(
+                        # "\nLoad channel '%s' error, removed this channel.", chn)
+                        os.remove(repofile)
+                        continue
+                    subdir = repodata['info'].get(
+                        'subdir', basename(dirname(repofile)))
+                    chn_info[chn]["cached"][subdir] = repodata["packages"]
+                    chn_info[chn]["packages"][subdir] = len(
+                        repodata["packages"])
+                    chn_info[chn]["size"][subdir] = human_bytes(
+                        sum([p["size"] for _, p in repodata["packages"].items()]))
         for uf in localrepo.url_files:
             if isfile(uf):
                 with open(uf) as fi:

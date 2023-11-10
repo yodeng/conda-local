@@ -4,6 +4,55 @@
 from .utils import *
 
 
+class LocalChannels(object):
+
+    def __init__(self, scheme="", location="", name="", url=""):
+        self.scheme = scheme
+        self.location = location
+        self.name = name
+        self.url = url
+        self.local_url = ""
+
+    @staticmethod
+    def from_url(url):
+        ch = Channel.from_url(url)
+        lch = LocalChannels(ch.scheme, ch.channel_location, ch.name, ch.url())
+        lch._local_url()
+        return lch
+
+    @staticmethod
+    def from_name(name):
+        ch = Channel.from_channel_name(name)
+        return LocalChannels.from_url(ch.url())
+
+    @staticmethod
+    def from_channel(ch):
+        return LocalChannels.from_url(ch.url())
+
+    def _local_url(self):
+        rd = LocalCondaRepo.defaut_repo_dir
+        fn = LocalCondaRepo.repodata_fn
+        for subdir in context.subdirs:
+            chn_file = join(rd,  self.location, self.name, subdir, fn)
+            if isfile(chn_file):
+                c = Channel.from_url(path_to_url(dirname(dirname(chn_file))))
+                self.local_url = c.url()
+
+    def to_channel(self, name="", local=True):
+        if self.local_url and local:
+            return Channel.from_url(self.local_url)
+        n, loc = self.name, self.location
+        if name and "/" in n and n.endswith(name):
+            i, n = n.rsplit("/", 1)
+            loc = join(loc, i)
+        return Channel(scheme=self.scheme, location=loc, name=n)
+
+    def __str__(self):
+        return "{}({}, {})".format(self.__class__.__name__, self.name, self.local_url or self.url)
+
+    __repr__ = __str__
+
+
 class LocalCondaRepo(Log):
 
     defaut_repo_dir = os.getenv("LOCAL_CONDA_DIR", "") or join(
@@ -18,6 +67,7 @@ class LocalCondaRepo(Log):
         self.url_files = set()
         self.channels = {}
         self.channels_url = {}
+        self._url_to_name = {}
 
     def scan_repos(self):
         for rd in self._repodir:
@@ -26,29 +76,20 @@ class LocalCondaRepo(Log):
                     for i in c:
                         if basename(i) == self.repodata_fn:
                             self.repos.append(join(a, i))
+                        elif basename(i) == ".urls.json":
+                            f = join(a, i)
+                            self.url_files.add(f)
+                            with open(f) as fi:
+                                for name, url in json.load(fi)["channels"].items():
+                                    if isfile(join(a, name, context.subdir, REPODATA_FN)):
+                                        c = LocalChannels.from_url(url)
+                                        self.channels[name] = c.to_channel(
+                                            name=name)
+                                        self.channels_url[name] = dirname(
+                                            c.url)
 
     def parse_repos(self):
-        if not self.repos:
-            self.scan_repos()
-        for repo in self.repos:
-            subdir = basename(os.path.dirname(repo))
-            if subdir in context.subdirs:
-                url = path_to_url(os.path.dirname(os.path.dirname(repo)))
-                c = Channel.from_url(url)
-                if c.name in self.channels and c.channel_location != self.channels[c.name].channel_location:
-                    LOCAL_CONDA_LOG.debug("duplicate local channels: %s and %s", join(
-                        c.channel_location, c.name, subdir), join(self.channels[c.name].channel_location, c.name, subdir))
-                self.channels[c.name] = c
-                u_file = join(c.channel_location, ".urls.json")
-                if isfile(u_file):
-                    self.url_files.add(u_file)
-        for uf in self.url_files:
-            if isfile(uf):
-                with open(uf) as fi:
-                    self.channels_url.update(json.load(fi)["channels"])
-        for c in self.channels.copy():
-            if c not in self.channels_url:
-                self.channels.pop(c)
+        self.scan_repos()
 
 
 class LocalConda(Log):
@@ -109,7 +150,7 @@ class LocalConda(Log):
         channels = IndexedSet()
         for url in all_channel_urls(chl_names, context.subdirs):
             c = Channel.from_url(url)
-            cname = basename(c.name)
+            cname = c.name
             if cname in local_repo.channels and os.path.dirname(local_repo.channels[cname].url()).endswith(c.name):
                 channels.add(local_repo.channels[cname])
             else:
@@ -376,6 +417,31 @@ def get_local_solver_class(key=None):
         solver.solve_for_transaction = _localSolver.solve_for_transaction
         solver._print_info = lambda _: print()
         return solver
+
+
+def get_repo_channels(mirrors):
+    headers = default_headers
+    res = requests.get(url=mirrors, headers=headers)
+    mirrors = res.url
+    h = etree.HTML(res.content)
+    channels = []
+    chnames = [i.strip("/") for i in h.xpath("//a/@href")
+               if re.match("^\w", i) and i.endswith("/")]
+    for c in sorted(chnames):
+        url = join(mirrors, c, context.subdirs[0], REPODATA_FN)
+        r = requests.head(url, headers=headers)
+        if r.status_code != 200:
+            continue
+        content_length = 0
+        try:
+            content_length = int(r.headers.get("Content-Length", 0))
+        except Exception as e:
+            LOCAL_CONDA_LOG.info(e)
+            continue
+        else:
+            channel = LocalChannels.from_url(url)
+            channels.append(channel.to_channel(local=False, name=c))
+    return channels
 
 
 localSolver = get_local_solver_class
