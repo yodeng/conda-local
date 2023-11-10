@@ -97,7 +97,7 @@ def execute(args):
         local_repo.parse_repos()
         channels = LocalConda.file_channels(context.channels, local_repo)
         LOCAL_CONDA_LOG.info("Using conda channel: %s", cstring(", ".join(
-            flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channels])), 0, 34))
+            flatten([join(c.scheme + "://" if c.scheme != "file" else "", c.location, c.name) for c in channels])), 0, 34))
         solver = localSolver(key=args.solver)(prefix, channels,
                                               context.subdirs, specs_to_remove=specs)
         txn = solver.solve_for_transaction()

@@ -91,7 +91,7 @@ def execute(args):
     channel_urls = LocalConda.file_channels(
         new_channel_names(_channel_urls, args), local_repo)
     local_repo.log.info("Using conda channel: %s", cstring(", ".join(
-        flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channel_urls])), 0, 34))
+        flatten([join(c.scheme + "://" if c.scheme != "file" else "", c.location, c.name) for c in channel_urls])), 0, 34))
     matches = _search(spec, channel_urls, subdirs, key=args.solver)
     if not matches and spec.get_exact_value("name"):
         flex_spec = MatchSpec(spec, name="*%s*" % spec.name)

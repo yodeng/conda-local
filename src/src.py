@@ -40,12 +40,17 @@ class LocalChannels(object):
 
     def to_channel(self, name="", local=True):
         if self.local_url and local:
-            return Channel.from_url(self.local_url)
-        n, loc = self.name, self.location
-        if name and "/" in n and n.endswith(name):
-            i, n = n.rsplit("/", 1)
-            loc = join(loc, i)
-        return Channel(scheme=self.scheme, location=loc, name=n)
+            c = Channel.from_url(self.local_url)
+        else:
+            c = Channel(scheme=self.scheme,
+                        location=self.location, name=self.name)
+        path = join(c.location, c.name)
+        loc, n = c.location, c.name
+        if name:
+            n = name
+            loc = path[:-len(name)-1]
+            c = Channel(scheme=c.scheme, location=loc, name=n)
+        return c
 
     def __str__(self):
         return "{}({}, {})".format(self.__class__.__name__, self.name, self.local_url or self.url)
@@ -140,7 +145,7 @@ class LocalConda(Log):
         channel_names = new_channel_names(self.channels, self.args)
         channels = self.file_channels(channel_names, self.local_repo)
         self.log.info("Using conda channel: %s", cstring(", ".join(
-            flatten([[join(c.base_url if not c.base_url.startswith("file://") else c.base_url[7:], s) for s in context.subdirs] for c in channels])), 0, 34))
+            flatten([join(c.scheme + "://" if c.scheme != "file" else "", c.location, c.name) for c in channels])), 0, 34))
         solver = localSolver(key=self.args.solver)(self.prefix, channels,
                                                    context.subdirs, specs_to_add=self.specs)
         return solver
