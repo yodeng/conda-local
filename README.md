@@ -5,7 +5,7 @@
 ### Requirement
 
 + Linux-64
-+ Pyhon >= 2.7.10, <3.10
++ Pyhon >= 3.5
 
 ### Install
 
@@ -42,6 +42,7 @@ positional arguments:
     download     Download all packages include depency from local conda repodata.
     cache        Cache local conda repodata.
     list         List all available (cached) local conda repodata.
+    ls           Alias for list
 
 optional arguments:
   -h, --help     Show this help message and exit.

@@ -13,9 +13,9 @@ import subprocess
 
 from tqdm import tqdm
 from lxml import etree
+from requests import Session
 
 from textwrap import dedent
-from requests import Session
 from importlib import import_module
 from collections import defaultdict
 from logging import getLogger, Formatter
@@ -119,7 +119,7 @@ def add_logging_debug(p):
 
 
 def add_parse_no_default_channels(p):
-    p.add_argument("--without-default-channels", action="store_true", default=False,
+    p.add_argument("-ndc", "--no-default-channels", action="store_true", default=False,
                    help="Do not search default or %s/.condarc channels. Requires -c / --channel." % os.getenv(
                        "HOME", os.path.expanduser("~"))
                    )
@@ -155,10 +155,10 @@ def add_parser_local_solver(p):
 
 def new_channel_names(channels, args):
     chl_names = list(channels)
-    if hasattr(args, "without_default_channels") and args.without_default_channels:
+    if hasattr(args, "no_default_channels") and args.no_default_channels:
         if hasattr(args, "channel") and not args.channel:
             raise ArgumentError(
-                "At least one -c / --channel flag must be supplied when using --without-default-channels.")
+                "At least one -c / --channel flag must be supplied when using --no-default-channels.")
         if "defaults" in chl_names:
             chl_names.remove("defaults")
     return tuple(chl_names)

@@ -93,8 +93,7 @@ class LocalCondaRepo(Log):
                                         self.channels_url[name] = dirname(
                                             c.url)
 
-    def parse_repos(self):
-        self.scan_repos()
+    parse_repos = scan_repos
 
 
 class LocalConda(Log):
