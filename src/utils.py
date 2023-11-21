@@ -15,6 +15,7 @@ from tqdm import tqdm
 from lxml import etree
 
 from textwrap import dedent
+from requests import Session
 from importlib import import_module
 from collections import defaultdict
 from logging import getLogger, Formatter
@@ -53,6 +54,9 @@ from conda._vendor.boltons.setutils import IndexedSet
 from conda.gateways.logging import StdStreamHandler
 from conda.gateways.disk.test import is_conda_environment
 from conda.gateways.disk.delete import rm_rf, delete_trash, path_is_clean
+from conda.gateways.connection.adapters.s3 import S3Adapter
+from conda.gateways.connection.adapters.ftp import FTPAdapter
+from conda.gateways.connection.adapters.localfs import LocalFSAdapter
 
 from conda.models.match_spec import MatchSpec
 from conda.models.version import VersionOrder
@@ -217,12 +221,12 @@ class Download(object):
 
     bar_format = "{desc}{bar} | {percentage:3.0f}% "
 
-    def __init__(self, axn, exn, lock):
+    def __init__(self, axn, exn, lock=None):
         self.axn = axn
         self.exn = exn
         axn.verify()
         exn.verify()
-        self.lock = lock
+        self.lock = lock or Lock()
         self.target_pkgs_dir = axn.target_pkgs_dir
         mkdir(self.target_pkgs_dir)
         self.target_package_cache = PackageCacheData(self.target_pkgs_dir)
@@ -257,7 +261,11 @@ class Download(object):
             desc += "%-9s | " % size_str
         md5 = hashlib.md5()
         LOCAL_CONDA_LOG.debug("download from %s to %s", url, outpath)
-        with requests.get(url, headers=headers, stream=True) as res:
+        session = Session()
+        session.mount("ftp://", FTPAdapter())
+        session.mount("s3://", S3Adapter())
+        session.mount("file://", LocalFSAdapter())
+        with session.get(url, headers=headers, stream=True) as res:
             if res.headers.get("Accept-Ranges", "") != "bytes":
                 if isfile(outpath):
                     os.remove(outpath)
@@ -420,3 +428,8 @@ def is_repo_url(url):
     if res.status_code >= 400:
         return (False, res.status_code)
     return (True, res.status_code)
+
+
+def log_channel_used(channels):
+    LOCAL_CONDA_LOG.info("Using conda channel: %s", cstring(
+        ", ".join(dirname(c.url()) for c in channels), 0, 34))

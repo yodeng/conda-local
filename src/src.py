@@ -144,8 +144,7 @@ class LocalConda(Log):
         self.local_repo.parse_repos()
         channel_names = new_channel_names(self.channels, self.args)
         channels = self.file_channels(channel_names, self.local_repo)
-        self.log.info("Using conda channel: %s", cstring(", ".join(
-            flatten([join(c.scheme + "://" if c.scheme != "file" else "", c.location, c.name) for c in channels])), 0, 34))
+        log_channel_used(channels)
         solver = localSolver(key=self.args.solver)(self.prefix, channels,
                                                    context.subdirs, specs_to_add=self.specs)
         return solver
