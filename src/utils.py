@@ -243,7 +243,7 @@ class Download(object):
             offset = os.path.getsize(outpath)
             if offset == size:
                 if get_md5(outpath) == axn.md5:
-                    LOCAL_CONDA_LOG.info("%s already esists", outpath)
+                    LOCAL_CONDA_LOG.info("%s already exists", outpath)
                     return
                 else:
                     os.remove(outpath)
@@ -299,35 +299,44 @@ class Download(object):
             self.target_package_cache._urls_data.add_url(url)
 
     @classmethod
-    def download_file(cls, url, outpath, con_tinue=False):
+    def download_file(cls, url, outpath, md5=None):
+        subdir = basename(dirname(url))
         if url.endswith("json"):
             chn = basename(dirname(dirname(url)))
+            name = chn + "(%s)" % subdir
         else:
-            chn = basename(url)
-        subdir = basename(dirname(url))
-        desc = '%-20.20s | ' % (chn + "(%s)" % subdir)
-        offset = 0
-        if con_tinue and isfile(outpath):
-            offset = os.path.getsize(outpath)
+            name = chn = basename(url)
+        desc = '%-20.20s | ' % name
+        if isfile(outpath):
+            if md5 and get_md5(outpath) == md5:
+                LOCAL_CONDA_LOG.info(
+                    "%s already exists and up-to-date", name)
+                return
+            else:
+                os.remove(outpath)
         headers = default_headers.copy()
-        headers["Range"] = "bytes={}-".format(offset)
         LOCAL_CONDA_LOG.debug("download from %s to %s", url, outpath)
+        _md5 = hashlib.md5()
         with requests.get(url, headers=headers, stream=True) as res:
-            if res.headers.get("Accept-Ranges", "") != "bytes":
-                if isfile(outpath):
-                    os.remove(outpath)
-                    offset = 0
             content_length = float(res.headers.get('Content-Length', 0))
             cur = currentThread()
             pos = None if cur.name == "MainThread" else int(
                 cur.name.rsplit("_", 1)[1])
-            with tqdm(desc=desc, position=pos, initial=offset, total=content_length, bar_format=cls.bar_format, ascii=True, disable=context.quiet) as progress_bar:
+            with tqdm(desc=desc, position=pos, initial=0, total=content_length, bar_format=cls.bar_format, ascii=True, disable=context.quiet) as progress_bar:
                 with open(outpath, "ab") as fo:
                     for chunk in res.iter_content(chunk_size=2 ** 14):
                         if chunk:
                             fo.write(chunk)
                             fo.flush()
+                            _md5.update(chunk)
                             progress_bar.update(len(chunk))
+        download_md5 = _md5.hexdigest()
+        if md5 and md5 != download_md5:
+            LOCAL_CONDA_LOG.debug("md5 mismatch for download: %s (%s != %s)",
+                                  url, download_md5, md5)
+            raise ChecksumMismatchError(
+                url, outpath, "md5", md5, download_md5
+            )
 
     def run(self):
         try:

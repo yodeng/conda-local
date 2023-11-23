@@ -211,7 +211,8 @@ class LocalConda(Log):
                 for pkgs in all_links[0]["LINK"]:
                     url = self.back_url(pkgs)
                     outpath = join(self.download_dir, basename(url))
-                    p.submit(Download.download_file, url, outpath, True)
+                    p.submit(Download.download_file,
+                             url, outpath, md5=pkgs.md5)
             print()
             self.log.info(
                 "All packages and depency saved in '%s' directory.", self.download_dir)
