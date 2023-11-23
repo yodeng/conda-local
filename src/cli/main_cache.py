@@ -106,9 +106,9 @@ def execute(args):
                             c.channel_location, ".urls.json")
             url_cached.setdefault(url_file, {})[c.name] = dirname(c.url())
         if download_args:
-            print("\nDownload channels repodata, (%d threads)" %
-                  min(DEFAULT_THREADS, len(channels)))
-            with ThreadPoolExecutor(DEFAULT_THREADS) as p:
+            nthreads = min(DEFAULT_THREADS, len(download_args))
+            print("\nDownload channels repodata, (%d threads)" % nthreads)
+            with ThreadPoolExecutor(nthreads) as p:
                 for url, outfile in download_args:
                     p.submit(Download.download_file, url, outfile)
     if url_cached:
