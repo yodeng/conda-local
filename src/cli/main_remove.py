@@ -95,7 +95,7 @@ def execute(args):
         specs = common.specs_from_args(args.package_names)
         local_repo = LocalCondaRepo()
         local_repo.parse_repos()
-        channels = LocalConda.file_channels(context.channels, local_repo)
+        channels = LocalConda.local_channels(context.channels, local_repo)
         log_channel_used(channels)
         solver = localSolver(key=args.solver)(prefix, channels,
                                               context.subdirs, specs_to_remove=specs)

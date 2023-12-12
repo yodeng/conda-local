@@ -22,8 +22,9 @@ class LocalChannels(object):
 
     @staticmethod
     def from_name(name):
-        ch = Channel.from_channel_name(name)
-        return LocalChannels.from_url(ch.url())
+        ch = Channel(name)
+        url = ch.url() or ch.urls()[0]
+        return LocalChannels.from_url(url)
 
     @staticmethod
     def from_channel(ch):
@@ -72,7 +73,7 @@ class LocalCondaRepo(Log):
         self.url_files = set()
         self.channels = {}
         self.channels_url = {}
-        self._url_to_name = {}
+        # self._url_to_name = {}
 
     def scan_repos(self):
         for rd in self._repodir:
@@ -142,22 +143,25 @@ class LocalConda(Log):
     def _get_solve(self):
         self.local_repo.parse_repos()
         channel_names = new_channel_names(self.channels, self.args)
-        channels = self.file_channels(channel_names, self.local_repo)
+        channels = self.local_channels(channel_names, self.local_repo)
         log_channel_used(channels)
         solver = localSolver(key=self.args.solver)(self.prefix, channels,
                                                    context.subdirs, specs_to_add=self.specs)
         return solver
 
     @staticmethod
-    def file_channels(chl_names, local_repo):
+    def local_channels(chl_names, local_repo, local=True):
         channels = IndexedSet()
-        for url in all_channel_urls(chl_names, context.subdirs):
-            c = Channel.from_url(url)
-            cname = c.name
-            if cname in local_repo.channels and os.path.dirname(local_repo.channels[cname].url()).endswith(c.name):
-                channels.add(local_repo.channels[cname])
+        for chn in chl_names:
+            if "://" in chn:
+                c = LocalChannels.from_url(chn).to_channel(local=local)
+            elif chn in local_repo.channels:
+                url = local_repo.channels_url[chn]
+                c = LocalChannels.from_url(
+                    url).to_channel(local=local, name=chn)
             else:
-                channels.add(c)
+                c = LocalChannels.from_name(chn).to_channel(local=local)
+            channels.add(c)
         return channels
 
     def install(self, cmd="install"):

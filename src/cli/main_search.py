@@ -88,7 +88,7 @@ def execute(args):
     _channel_urls = (spec_channel,) if spec_channel else context.channels
     local_repo = LocalCondaRepo()
     local_repo.parse_repos()
-    channel_urls = LocalConda.file_channels(
+    channel_urls = LocalConda.local_channels(
         new_channel_names(_channel_urls, args), local_repo)
     log_channel_used(channel_urls)
     matches = _search(spec, channel_urls, subdirs, key=args.solver)

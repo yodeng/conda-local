@@ -1,4 +1,5 @@
 lxml
+tqdm
 cython
 conda
 requests
