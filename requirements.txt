@@ -1,5 +1,5 @@
 lxml
 tqdm
 cython
-conda
+conda>=4.6.0
 requests

@@ -35,7 +35,7 @@ from conda.common.url import path_to_url
 from conda.common.constants import NULL
 from conda.common.serialize import json_load
 from conda.common.compat import ensure_text_type
-from conda.common.path import paths_equal, is_package_file
+from conda.common.path import paths_equal
 
 from conda.core.solve import Solver
 from conda.core.path_actions import *
@@ -71,6 +71,13 @@ from conda.utils import human_bytes
 from conda.misc import explicit, touch_nonadmin
 from conda.exceptions import *
 
+try:
+    from conda.common.path import is_package_file
+except ImportError:
+    is_package_file = (
+        lambda path: path[-6:] == ".conda" or path[-8:] == ".tar.bz2")
+
+
 from conda_env.specs import detect
 
 from ._version import __version__
@@ -103,7 +110,7 @@ default_headers = {
 
 def flatten(x):
     return [y for l in x for y in flatten(
-        l)] if isinstance(x, list) else [x]
+        l)] if isinstance(x, (list, tuple)) else [x]
 
 
 def add_version(p):
