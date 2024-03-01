@@ -45,10 +45,9 @@ from conda.core.index import calculate_channel_urls
 from conda.core.link import PrefixSetup, UnlinkLinkTransaction
 from conda.core.package_cache_data import PackageCacheData
 
-from conda.base.context import context, determine_target_prefix, get_prefix
+from conda.base.context import context, determine_target_prefix
 from conda.base.constants import UpdateModifier, ROOT_ENV_NAME
 
-from conda._vendor.toolz import concat
 from conda._vendor.boltons.setutils import IndexedSet
 
 from conda.gateways.logging import StdStreamHandler

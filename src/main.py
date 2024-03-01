@@ -38,7 +38,10 @@ def main():
         LOCAL_CONDA_LOG.setLevel(10)
     os.environ["CONDA_AUTO_UPDATE_CONDA"] = "false"
     context.__init__(argparse_args=args)
-    init_loggers(context)
+    try:
+        init_loggers(context)
+    except TypeError:
+        init_loggers()
     stdoutlog = getLogger("conda.stdoutlog")
     for h in stdoutlog.handlers:
         stdoutlog.removeHandler(h)
