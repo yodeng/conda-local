@@ -6,6 +6,7 @@ import re
 import sys
 import time
 import json
+import signal
 import hashlib
 import requests
 import tempfile
@@ -19,7 +20,7 @@ from textwrap import dedent
 from importlib import import_module
 from collections import defaultdict
 from logging import getLogger, Formatter
-from threading import Lock, currentThread, RLock
+from threading import Lock, RLock, currentThread, Thread
 from urllib.parse import urlsplit, urlunsplit
 from argparse import ArgumentParser, SUPPRESS
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
@@ -87,6 +88,22 @@ DEFAULT_MIRROR = (
     "https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud",
     "https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs",
 )
+
+
+class ForceExitDaemon(Thread):
+
+    def __init__(self, obj=None):
+        super(ForceExitDaemon, self).__init__()
+        signal.signal(signal.SIGINT, self.signal_handler)
+        signal.signal(signal.SIGTERM, self.signal_handler)
+        self.daemon = True
+
+    def run(self):
+        time.sleep(1)
+
+    def signal_handler(self, signum, frame):
+        print()
+        os._exit(signum)
 
 
 def _get_log():

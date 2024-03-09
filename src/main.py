@@ -27,7 +27,8 @@ def create_parser():
 
 def do_call(args):
     relative_mod, func_name = args.func.rsplit('.', 1)
-    module = import_module(relative_mod, __name__.rsplit('.', 1)[0])
+    module = import_module(relative_mod, __package__)
+    ForceExitDaemon().start()
     return getattr(module, func_name)(args)
 
 
