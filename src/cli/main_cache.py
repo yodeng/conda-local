@@ -50,27 +50,32 @@ def execute(args):
     if args.channel:
         mirrors = []
         for chn in args.channel:
+            cset = set()
             if "://" in chn:
                 c = LocalChannels.from_url(chn).to_channel(local=False)
+                cset.add(c)
             elif chn in localrepo.channels:
                 url = localrepo.channels_url[chn]
                 c = LocalChannels.from_url(
                     url).to_channel(local=False, name=chn)
+                cset.add(c)
             else:
-                c = LocalChannels.from_name(chn).to_channel(local=False)
-            if c.name in localrepo.channels:
-                try:
-                    common.confirm_yn("WARNING: conda channel '%s' already cached\n" % c +
-                                      "\nUpdate",
-                                      default='no',
-                                      dry_run=False)
+                for c in LocalChannels.from_name(chn):
+                    cset.add(c.to_channel(local=False))
+            for c in cset:
+                if c.name in localrepo.channels:
+                    try:
+                        common.confirm_yn("WARNING: conda channel '%s' already cached\n" % c +
+                                          "\nUpdate",
+                                          default='no',
+                                          dry_run=False)
 
-                except CondaSystemExit:
-                    continue
-            status, ret_code = is_repo_url(c.url())
-            if not status:
-                raise UnavailableInvalidChannel(c.url(), ret_code)
-            channels.append(c)
+                    except CondaSystemExit:
+                        continue
+                status, ret_code = is_repo_url(c.url())
+                if not status:
+                    raise UnavailableInvalidChannel(c.url(), ret_code)
+                channels.append(c)
     for ms in mirrors[:]:
         n = urlsplit(ms)
         md = join(LocalCondaRepo.defaut_repo_dir,

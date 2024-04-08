@@ -23,8 +23,15 @@ class LocalChannels(object):
     @staticmethod
     def from_name(name):
         ch = Channel(name)
-        url = ch.url() or ch.urls()[0]
-        return LocalChannels.from_url(url)
+        channels = IndexedSet()
+        url = ch.url()
+        if url:
+            channels.add(LocalChannels.from_url(url))
+        else:
+            urls = ch.urls()[0::2]
+            for url in urls:
+                channels.add(LocalChannels.from_url(url))
+        return channels
 
     @staticmethod
     def from_channel(ch):
@@ -155,13 +162,15 @@ class LocalConda(Log):
         for chn in chl_names:
             if "://" in chn:
                 c = LocalChannels.from_url(chn).to_channel(local=local)
+                channels.add(c)
             elif chn in local_repo.channels:
                 url = local_repo.channels_url[chn]
                 c = LocalChannels.from_url(
                     url).to_channel(local=local, name=chn)
+                channels.add(c)
             else:
-                c = LocalChannels.from_name(chn).to_channel(local=local)
-            channels.add(c)
+                for c in LocalChannels.from_name(chn):
+                    channels.add(c.to_channel(local=local))
         return channels
 
     def install(self, cmd="install"):
