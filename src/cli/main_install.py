@@ -49,13 +49,7 @@ def configure_parser(sub_parsers):
     )
     add_parser_local_solver(p)
     add_parse_no_default_channels(p)
-    p.add_argument(
-        'packages',
-        metavar='package_spec',
-        action="store",
-        nargs='*',
-        help="Packages to install in the conda environment.",
-    )
+    add_parser_spec(p)
     add_parser_prefix(p)
     p.set_defaults(func='.cli.main_install.execute')
 
