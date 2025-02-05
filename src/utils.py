@@ -49,7 +49,10 @@ from conda.core.package_cache_data import PackageCacheData
 from conda.base.context import context, determine_target_prefix
 from conda.base.constants import UpdateModifier, ROOT_ENV_NAME
 
-from conda._vendor.boltons.setutils import IndexedSet
+try:
+    from conda._vendor.boltons.setutils import IndexedSet
+except:
+    from boltons.setutils import IndexedSet
 
 from conda.gateways.logging import StdStreamHandler
 from conda.gateways.disk.test import is_conda_environment
